@@ -1,0 +1,16 @@
+.footer {
+  border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-8));
+  padding: 20px 5px 30px 5px;
+}
+
+.profile-name{
+    font-weight: 600;
+}
+
+.mantine-Menu-label{
+    font-size: 0.6rem;
+}
+
+.mantine-Menu-item{
+    font-size: 0.7rem;
+}

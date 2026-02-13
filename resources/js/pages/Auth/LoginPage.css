@@ -1,0 +1,9 @@
+
+h1, p{
+    letter-spacing: -0.5px;
+}
+
+.subheader-text{
+    font-size: 16px;
+    text-align: center;
+}

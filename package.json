@@ -1,0 +1,51 @@
+{
+    "$schema": "https://json.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "^4.1.16",
+        "@vitejs/plugin-react": "^5.1.0",
+        "autoprefixer": "^10.4.21",
+        "axios": "^1.8.2",
+        "concurrently": "^9.0.1",
+        "laravel-vite-plugin": "^1.2.0",
+        "postcss": "^8.5.6",
+        "tailwindcss": "^4.1.16",
+        "vite": "^6.2.4"
+    },
+    "dependencies": {
+        "@dicebear/collection": "^9.2.3",
+        "@dicebear/core": "^9.2.3",
+        "@mantine/charts": "^8.3.14",
+        "@mantine/core": "^8.3.14",
+        "@mantine/dates": "^8.3.14",
+        "@mantine/form": "^8.3.14",
+        "@mantine/hooks": "^8.3.14",
+        "@mantine/modals": "^8.3.14",
+        "@mantine/notifications": "^8.3.14",
+        "@popperjs/core": "^2.11.8",
+        "@tabler/icons-react": "^3.36.1",
+        "aos": "^2.3.4",
+        "bootstrap": "^5.3.7",
+        "bootstrap-icons": "^1.13.1",
+        "chart.js": "^4.5.0",
+        "clsx": "^2.1.1",
+        "cropperjs": "^2.1.0",
+        "date-fns": "^4.1.0",
+        "dropzone": "^6.0.0-beta.2",
+        "jquery": "^3.7.1",
+        "mantine-datatable": "^8.3.13",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.4",
+        "react-redux": "^9.2.0",
+        "react-router-dom": "^7.13.0",
+        "react-select": "^5.10.2",
+        "react-toastify": "^11.0.5",
+        "sweetalert2": "^11.22.1",
+        "toastify-js": "^1.12.0"
+    }
+}
