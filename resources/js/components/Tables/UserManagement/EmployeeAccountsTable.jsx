@@ -21,7 +21,8 @@ import {
   IconTrash,
   IconPlus,
   IconAt,
-  IconPhoneCall
+  IconPhoneCall,
+  IconUsers
 } from '@tabler/icons-react';
 
 import { DataTable } from 'mantine-datatable';
@@ -221,6 +222,12 @@ const EmployeeAccountsTable = ({
                     </ActionIcon>
                   </Menu.Target>
                   <Menu.Dropdown>
+                    <Menu.Item
+                      leftSection={<IconUsers style={{ width: rem(14), height: rem(14) }} />}
+                      onClick={() => onEditEmployee(row)}
+                    >
+                      Manage User Roles
+                    </Menu.Item>
                     <Menu.Item
                       leftSection={<IconPencil style={{ width: rem(14), height: rem(14) }} />}
                       onClick={() => onEditEmployee(row)}

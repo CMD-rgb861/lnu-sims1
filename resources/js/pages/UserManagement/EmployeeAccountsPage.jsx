@@ -30,6 +30,11 @@ const EmployeeAccountsPage = () => {
   ));
 
   const [employees, setEmployees] = useState([]);
+  const [userRoles, setUserRoles] = useState([]);
+  const [colleges, setColleges] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [programs, setPrograms] = useState([]);
+
   const [selectedEmployee, setSelectedEmployee] = useState(null);
 
   const [loading, setLoading] = useState(true);
@@ -63,10 +68,18 @@ const EmployeeAccountsPage = () => {
       setLoading(true);
       try {
         // Fetch roles and pages in parallel
-        const [employeesResponse] = await Promise.all([
-          axiosClient.get('api/um/employees/data')
+        const [employeesResponse, userRolesResponse, collegesResponse, departmentsResponse, programsResponse] = await Promise.all([
+          axiosClient.get('api/um/employees/data'),
+          axiosClient.get('api/ur/data'),
+          axiosClient.get('api/c/data'),
+          axiosClient.get('api/d/data'),
+          axiosClient.get('api/p/data'),
         ]);
         setEmployees(employeesResponse.data);
+        setEmployees(userRolesResponse.data);
+        setEmployees(collegesResponse.data);
+        setEmployees(departmentsResponse.data);
+        setEmployees(programsResponse.data);
       } catch (error) {
         //
       } finally {

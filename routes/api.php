@@ -3,9 +3,13 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-use App\Http\Controllers\AuthController; 
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CollegeController;
+use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\PSGCController;
 use App\Http\Controllers\UserAccountController;
+use App\Http\Controllers\UserRoleController;
 
 // Public routes (no auth needed)
 Route::post('/', [AuthController::class, 'index']);
@@ -25,7 +29,33 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/barangays/{municipalityId}', [PSGCController::class, 'fetchBarangays'])->name('barangays');
     });
 
-    //USER SETTINGS
+    //USER ROLES ROUTES
+    Route::prefix('/ur/')->name('user_role.')->group(function() {
+        Route::get('/data', [UserRoleController::class, 'data'])->name('data');
+    });
+
+    //COLLEGES ROUTES
+    Route::prefix('/c/')->name('colleges.')->group(function() {
+        Route::get('/data', [CollegeController::class, 'data'])->name('data');
+    });
+
+    //DEPARTMENTS ROUTES
+    Route::prefix('/d/')->name('departments.')->group(function() {
+        Route::get('/data', [DepartmentController::class, 'data'])->name('data');
+    });
+
+    //PROGRAMS ROUTES
+    Route::prefix('/p/')->name('programs.')->group(function() {
+        Route::get('/data', [ProgramController::class, 'data'])->name('data');
+    });
+
+    //USER ROLES ROUTES
+    Route::prefix('/ur/')->name('user_role.')->group(function() {
+        Route::get('/data', [UserRoleController::class, 'data'])->name('data');
+    });
+
+
+    //USER MANAGEMENT ROUTES
     Route::prefix('/um/')->name('user_management.')->group(function() {
         Route::prefix('/employees/')->name('employees.')->group(function() {
              Route::get('/data', [UserAccountController::class, 'fetchEmployeeAccounts'])->name('fetchEmployeeAccounts');

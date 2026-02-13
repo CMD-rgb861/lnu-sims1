@@ -19,175 +19,187 @@ use Yajra\DataTables\Facades\DataTables;
 
 class CollegeController extends Controller
 {
-
-    // Show colleges index
-    public function index()
+    
+    // Fetch colleges for dropdown
+    public function data()
     {
-        return view('pages.employees.system_management.colleges_layout');
-    }
+        $colleges = College::all();
 
-    // Fetch colleges
-    public function fetchColleges()
-    {
-        $colleges = College::with(['dean'])->get();
-
-        return DataTables::of($colleges)
-            ->editColumn('created_at', function($colleges) {
-                return Carbon::parse($colleges->created_at)->format('m-d-Y h:i A');
-            })
-            ->editColumn('updated_at', function($colleges) {
-                return Carbon::parse($colleges->updated_at)->format('m-d-Y h:i A');
-            })
-            ->addColumn('dean', function($colleges) {
-            if ($colleges->dean) {
-                $first = $colleges->dean->first_name;
-                $last = $colleges->dean->last_name;
-
-                return "{$first} {$last}";
-            }
-            return 'Unknown';
-            })
-            ->make(true);
-    }
-
-    // Create colleges
-    public function createCollege(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'college_name' => 'required|string|max:255|unique:colleges,college_name',
-            'college_acronym'=> 'required|string|max: 10|unique:colleges,college_acronym',
-        ]);
-
-        if ($validator->fails()) 
-        {
-            if ($request->ajax()) 
-            {
-                return response()->json([
-                    'errors' => $validator->errors(),
-                ], 422);
-            }
-        }
-
-        DB::beginTransaction();
-
-        try{
-            $college = new College();
-
-            // Handle form fields 
-            $college->college_name = $request->college_name;
-            $college->college_acronym = $request->college_acronym;
-
-            $college->save();
-
-            DB::commit();
-
-            //Log user activity
-            UserLogsProvider::log(
-                'Logged in on the system',
-                1,
-                'Authentication'
-            );
-
-            return redirect()->back()->with('toast', [
-                'text' => 'College successfully created!',
-                'type' => 'success',
-            ]);
-
-        }catch(\Exception $e){
-            DB::rollBack();
-            return redirect()->back()->with('toast', [
-                'text' => 'Failed creating new college.' . $e->getMessage(),
-                'type' => 'error',
-            ]);
-        }
-         
-    }
-
-    // Edit college
-    public function editCollege($id)
-    {
-        $college = College::find($id);
         return response()->json([
-            'id' => $college->id,
-            'college_name' => $college->college_name,
-            'college_acronym' => $college->college_acronym,
+            'id' => $colleges->id,
+            'college_name' => $colleges->college_name,
+            'college_acronym' => $colleges->college_acronym,
         ]);
     }
 
-    // Update college
-    public function updateCollege(Request $request, $id)
-    {
-        $validator = Validator::make($request->all(), [
-            'college_name' => 'required|string|max:255',
-            'college_acronym'=> 'required|string|max:10'
-        ]);
+    // // Show colleges index
+    // public function index()
+    // {
+    //     return view('pages.employees.system_management.colleges_layout');
+    // }
 
-        if ($validator->fails()) 
-        {
-            if ($request->ajax()) 
-            {
-                return response()->json([
-                    'errors' => $validator->errors(),
-                ], 422);
-            }
-        }
+    // // Fetch colleges
+    // public function fetchColleges()
+    // {
+    //     $colleges = College::with(['dean'])->get();
 
-        DB::beginTransaction();
+    //     return DataTables::of($colleges)
+    //         ->editColumn('created_at', function($colleges) {
+    //             return Carbon::parse($colleges->created_at)->format('m-d-Y h:i A');
+    //         })
+    //         ->editColumn('updated_at', function($colleges) {
+    //             return Carbon::parse($colleges->updated_at)->format('m-d-Y h:i A');
+    //         })
+    //         ->addColumn('dean', function($colleges) {
+    //         if ($colleges->dean) {
+    //             $first = $colleges->dean->first_name;
+    //             $last = $colleges->dean->last_name;
 
-        try{
-            $updateCollege = College::findOrFail($id);
-            $updateCollege->college_name = $request->college_name;
-            $updateCollege->college_acronym = $request->college_acronym;
+    //             return "{$first} {$last}";
+    //         }
+    //         return 'Unknown';
+    //         })
+    //         ->make(true);
+    // }
 
-            $updateCollege->save();
+    // // Create colleges
+    // public function createCollege(Request $request)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'college_name' => 'required|string|max:255|unique:colleges,college_name',
+    //         'college_acronym'=> 'required|string|max: 10|unique:colleges,college_acronym',
+    //     ]);
 
-            DB::commit();
+    //     if ($validator->fails()) 
+    //     {
+    //         if ($request->ajax()) 
+    //         {
+    //             return response()->json([
+    //                 'errors' => $validator->errors(),
+    //             ], 422);
+    //         }
+    //     }
 
-            //Log user activity
-            UserLogsProvider::log('updated college: ' . $updateCollege->college_name);
+    //     DB::beginTransaction();
 
-            return response()->json([
-                'message' => 'College succesfully updated!',
-                'type' => 'success',
-            ]);
+    //     try{
+    //         $college = new College();
 
-        }catch(\Exception $e){
-            DB::rollBack();
-            return response()->json([
-                'message' => 'Failed to update college.' . $e->getMessage(),
-                'type' => 'error',
-            ]);
-        }
+    //         // Handle form fields 
+    //         $college->college_name = $request->college_name;
+    //         $college->college_acronym = $request->college_acronym;
+
+    //         $college->save();
+
+    //         DB::commit();
+
+    //         //Log user activity
+    //         UserLogsProvider::log(
+    //             'Logged in on the system',
+    //             1,
+    //             'Authentication'
+    //         );
+
+    //         return redirect()->back()->with('toast', [
+    //             'text' => 'College successfully created!',
+    //             'type' => 'success',
+    //         ]);
+
+    //     }catch(\Exception $e){
+    //         DB::rollBack();
+    //         return redirect()->back()->with('toast', [
+    //             'text' => 'Failed creating new college.' . $e->getMessage(),
+    //             'type' => 'error',
+    //         ]);
+    //     }
          
-    }
+    // }
 
-    // Delete college
-    public function deleteCollege($id)
-    {
+    // // Edit college
+    // public function editCollege($id)
+    // {
+    //     $college = College::find($id);
+    //     return response()->json([
+    //         'id' => $college->id,
+    //         'college_name' => $college->college_name,
+    //         'college_acronym' => $college->college_acronym,
+    //     ]);
+    // }
+
+    // // Update college
+    // public function updateCollege(Request $request, $id)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'college_name' => 'required|string|max:255',
+    //         'college_acronym'=> 'required|string|max:10'
+    //     ]);
+
+    //     if ($validator->fails()) 
+    //     {
+    //         if ($request->ajax()) 
+    //         {
+    //             return response()->json([
+    //                 'errors' => $validator->errors(),
+    //             ], 422);
+    //         }
+    //     }
+
+    //     DB::beginTransaction();
+
+    //     try{
+    //         $updateCollege = College::findOrFail($id);
+    //         $updateCollege->college_name = $request->college_name;
+    //         $updateCollege->college_acronym = $request->college_acronym;
+
+    //         $updateCollege->save();
+
+    //         DB::commit();
+
+    //         //Log user activity
+    //         UserLogsProvider::log('updated college: ' . $updateCollege->college_name);
+
+    //         return response()->json([
+    //             'message' => 'College succesfully updated!',
+    //             'type' => 'success',
+    //         ]);
+
+    //     }catch(\Exception $e){
+    //         DB::rollBack();
+    //         return response()->json([
+    //             'message' => 'Failed to update college.' . $e->getMessage(),
+    //             'type' => 'error',
+    //         ]);
+    //     }
+         
+    // }
+
+    // // Delete college
+    // public function deleteCollege($id)
+    // {
         
-        try {
-            DB::beginTransaction();
+    //     try {
+    //         DB::beginTransaction();
 
-            $college = College::findOrFail($id);
-            $college->delete();
+    //         $college = College::findOrFail($id);
+    //         $college->delete();
 
-            DB::commit();
+    //         DB::commit();
 
-            // Log user activity
-            UserLogsProvider::log('deleted college: ' . $college->college_name);
+    //         // Log user activity
+    //         UserLogsProvider::log('deleted college: ' . $college->college_name);
 
-            return response()->json([
-                'message' => 'College deleted successfully!',
-                'type' => 'success',
-            ], 200);
+    //         return response()->json([
+    //             'message' => 'College deleted successfully!',
+    //             'type' => 'success',
+    //         ], 200);
 
-        } catch (\Exception $e) {
-            DB::rollback();
-            return response()->json([
-                'message' => 'Failed to delete college. ' . $e->getMessage(),
-                'type' => 'error',
-            ], 500);
-        }
-    }
+    //     } catch (\Exception $e) {
+    //         DB::rollback();
+    //         return response()->json([
+    //             'message' => 'Failed to delete college. ' . $e->getMessage(),
+    //             'type' => 'error',
+    //         ], 500);
+    //     }
+    // }
     
 }

@@ -40,7 +40,11 @@ class UserAccountController extends Controller
     // Fetch employee accounts
     public function fetchEmployeeAccounts()
     {
-        $employeeAccounts = UserAccount::with(['user_type'])->get();
+        $currentUser = Auth::user();
+
+        $employeeAccounts = UserAccount::with(['user_type'])
+                                        ->where('id', '!=', $currentUser->id)
+                                        ->get();
 
         $formattedAccounts = $employeeAccounts->map(function($employee) {
             return [
