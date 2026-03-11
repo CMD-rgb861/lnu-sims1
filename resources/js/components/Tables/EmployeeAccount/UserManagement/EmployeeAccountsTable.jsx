@@ -26,9 +26,9 @@ import {
 } from '@tabler/icons-react';
 
 import { DataTable } from 'mantine-datatable';
-import { getDiceBearAvatar } from '../../../plugins/dicebear'; 
+import { getDiceBearAvatar } from '../../../../plugins/dicebear'; 
 import { formatDistanceToNow } from 'date-fns';
-import '../TableStyling.css';
+import '../../TableStyling.css';
 
 const EmployeeAccountsTable = ({
   data,

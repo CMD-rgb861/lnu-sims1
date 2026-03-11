@@ -5,25 +5,30 @@ namespace App\Http\Controllers;
 use App\Models\Barangay;
 use App\Models\Municipality;
 use App\Models\Province;
+use App\Models\Region;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 
 class PSGCController extends Controller
 {
-    // // Fetch all regions
-    // public function fetchRegions()
-    // {
-    //     return response()->json(
-    //         Cache::remember('regions_all', now()->addDays(7), function () {
-    //             return Http::withHeaders([
-    //                 'Accept' => 'application/json',
-    //             ])->withOptions([
-    //                 'verify' => false,
-    //             ])->get('https://psgc.gitlab.io/api/regions/')
-    //               ->json();
-    //         })
-    //     );
-    // }
+
+    // Fetch all regions
+    public function fetchRegions()
+    {
+        // return response()->json(
+        //     Cache::remember('regions_all', now()->addDays(7), function () {
+        //         return Http::withHeaders([
+        //             'Accept' => 'application/json',
+        //         ])->withOptions([
+        //             'verify' => false,
+        //         ])->get('https://psgc.gitlab.io/api/regions/')
+        //           ->json();
+        //     })
+        // );
+
+        $regions = Region::get(['id', 'psgc_code', 'name']);
+        return response()->json($regions);
+    }
 
     // Fetch provinces for a given region
     public function fetchProvinces($regionId)

@@ -32,9 +32,9 @@ const sidebarLinks = [
     icon: IconUserCircle,
     initiallyOpened: false,
     links: [
-      { label: 'Personal Information', link: '/cr/blotters'},
-      { label: 'Educational Background', link: '/cr/profiling'},
-      { label: 'Family Background', link: '/cr/profiling'},
+      { label: 'Personal Information', link: '/mp/personal-information'},
+      { label: 'Educational Background', link: '/mp/educational-background'},
+      { label: 'Family Background', link: '/mp/family-background'},
     ],
   },
   {
@@ -54,10 +54,10 @@ const sidebarLinks = [
   { label: 'Help', icon: IconHelp, link: '/us' },
 ];
 
-const StudentSidebarComponent = () => {
-  const { pathname } = useLocation(); 
+    const StudentSidebarComponent = () => {
+    const { pathname } = useLocation(); 
 
-  const links = sidebarLinks.map((item, index) => {
+    const links = sidebarLinks.map((item, index) => {
 
     if (item.type === 'divider') {
       return <Divider size="xs" my="sm" key={`divider-${index}`} label={item.label} labelPosition="left" />;

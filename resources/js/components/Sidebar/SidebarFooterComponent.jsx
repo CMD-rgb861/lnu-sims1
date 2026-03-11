@@ -17,24 +17,29 @@ import {
 } from '@tabler/icons-react';
 
 import { getDiceBearAvatar } from '../../plugins/dicebear'; 
+import { useAuth } from '../../hooks/useAuth';
 import './SidebarFooterComponent.css';
 
 export const SidebarFooterComponent = () => {
-  const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
-  
-  if (!user) {
-    return null; 
-  }
+    const STORAGE_URL = import.meta.env.VITE_API_BASE_URL 
+            ? `${import.meta.env.VITE_API_BASE_URL}/storage/` 
+            : 'http://localhost:8000/storage/';
 
-  const handleLogout = (e) => {
-    e.preventDefault();
-    dispatch(logoutUser());
-  };
-  
-  const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
+    const { user } = useAuth();
+    const dispatch = useDispatch();
+    
+    if (!user) {
+        return null; 
+    }
 
-  const dicebearUrl = getDiceBearAvatar(fullName, 'initials');
+    const handleLogout = (e) => {
+        e.preventDefault();
+        dispatch(logoutUser());
+    };
+    
+    const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
+
+    const dicebearUrl = getDiceBearAvatar(fullName, 'initials');
 
   return (
     <AppShell.Section className="footer" mb={10}>
@@ -52,7 +57,7 @@ export const SidebarFooterComponent = () => {
               >
                 <Group gap="md">
                   <Avatar
-                    src={user.avatar || dicebearUrl}
+                    src={`${STORAGE_URL}${user.student_profile?.profile_pic}` || dicebearUrl}
                     alt={fullName || 'User'}
                     radius="xl"
                     size="md"

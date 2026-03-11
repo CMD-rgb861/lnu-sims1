@@ -11,9 +11,9 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { useModals } from '@mantine/modals';
-import axiosClient from '../../api/axiosClient';
+import axiosClient from '../../../api/axiosClient';
 
-import EmployeeAccountsTable from '../../components/Tables/UserManagement/EmployeeAccountsTable';
+import EmployeeAccountsTable from '../../../components/Tables/EmployeeAccount/UserManagement/EmployeeAccountsTable';
 
 const ROWS_PER_PAGE = 10;
 

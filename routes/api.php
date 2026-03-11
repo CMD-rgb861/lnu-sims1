@@ -6,8 +6,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CollegeController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\NationalityController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\PSGCController;
+use App\Http\Controllers\StudentAccountController;
 use App\Http\Controllers\UserAccountController;
 use App\Http\Controllers\UserRoleController;
 
@@ -20,7 +22,10 @@ Route::post('/student-login', [AuthController::class, 'studentLogin']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
-    
+
+    //NATIONALITY ROUTES
+    Route::get('/nationalities', [NationalityController::class, 'fetchNationalities']);
+
     //PSGC ROUTES
     Route::prefix('/psgc/')->name('psgc.')->group(function() {
         Route::get('/regions', [PSGCController::class, 'fetchRegions'])->name('regions');
@@ -53,7 +58,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('/ur/')->name('user_role.')->group(function() {
         Route::get('/data', [UserRoleController::class, 'data'])->name('data');
     });
-
 
     //USER MANAGEMENT ROUTES
     Route::prefix('/um/')->name('user_management.')->group(function() {
@@ -91,5 +95,13 @@ Route::middleware('auth:sanctum')->group(function () {
     //     // Route::delete('/{user}/delete-personnel', [EnvironmentBarangayController::class, 'deleteBarangayPersonnel'])->name('deleteBarangayPersonnel');
     // });
 
+    //* STUDENT ACCOUNT ROUTES *//
+
+    //MY PROFILE ROUTES
+    Route::prefix('/mp/')->name('my_profile.')->group(function() {
+        Route::get('/fetch/student-details/{id}', [StudentAccountController::class, 'fetchStudentAccountDetails'])->name('fetchStudentAccountDetails');
+        Route::post('/upload-pictures', [StudentAccountController::class, 'uploadStudentPictures'])->name('uploadStudentPictures');
+        Route::put('/update-personal-info', [StudentAccountController::class, 'updateStudentProfileInfo'])->name('updateStudentProfileInfo');
+    });
     
 });

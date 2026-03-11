@@ -24,17 +24,17 @@ class UserLogsProvider extends ServiceProvider
         //
     }
 
-    public static function log($description, $event, $scope)
+    public static function log($description, $event, $scope, $userId = null)
     {
         try {
-            $user = Auth::user();
+            $employeeId = $userId ?? Auth::guard('employee')->id();
 
-            if ($user) {
+            if ($employeeId) {
                 UserLog::create([
                     'log_description' => $description,
                     'event' => $event,
                     'scope' => $scope,
-                    'user_account_id' => $user->id,
+                    'user_account_id' => $employeeId,
                 ]);
             }
 

@@ -1,5 +1,5 @@
 .navbar {
-  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-8));
   height: 100%;
   width: 290px;
   padding: var(--mantine-spacing-md);
@@ -40,15 +40,15 @@
 }
 
 .mantine-NavLink-root{
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: -0.3px;
-  color: light-dark(var(--mantine-color-gray-8), var(--mantine-color-dark-1));
+  color: light-dark(var(--mantine-color-dark-9), var(--mantine-color-dark-1));
 }
 
 .mantine-NavLink-root:where([data-active], [aria-current='page']){
   background-color: light-dark(var(--mantine-color-myColor-0), var(--mantine-color-dark-8));
   border-radius: 30px;
-  font-weight: 500;
+  font-weight: 600;
   color: light-dark(var(--mantine-color-myColor-9), var(--mantine-color-dark-1));
 }
 

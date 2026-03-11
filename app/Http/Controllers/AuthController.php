@@ -223,7 +223,7 @@ class AuthController extends Controller
             return response()->json([
                 'user' => $user,
                 'user_type' => $user->user_type->user_type_description,
-                'user_role_level' => $user->roles->pluck('user_role_level')->toArray(),
+                'user_role_level' => $user->roles->pluck('user_role_level')->toArray()
             ]);
         }
 
@@ -232,6 +232,7 @@ class AuthController extends Controller
                 'user' => $user,
                 'user_type' => 'Student',
                 'user_role_level' => [],
+                'profile_pic' => $user->student_profile->profile_pic
             ]);
         }
 
@@ -275,17 +276,17 @@ class AuthController extends Controller
 
         Auth::guard('employee')->login($user);
 
-        $request->user('employee')->update([
-            'last_login' => now(),
-            'is_logged_in' => 1,
-        ]);
-
         //Log user activity
         UserLogsProvider::log(
             'Employee logged in on the system',
             1,
             'Authentication'
         );
+
+        $request->user('employee')->update([
+            'last_login' => now(),
+            'is_logged_in' => 1,
+        ]);
 
         return response()->json([
             'message' => 'Login successful!',
@@ -330,17 +331,17 @@ class AuthController extends Controller
 
         Auth::guard('student')->login($user);
 
-        $user->update([
-            'last_login' => now(),
-            'is_logged_in' => 1,
-        ]);
-
         //Log user activity
         StudentLogsProvider::log(
             'Student logged in on the system',
             1,
             'Authentication'
         );
+
+        $user->update([
+            'last_login' => now(),
+            'is_logged_in' => 1,
+        ]);
 
         return response()->json([
             'message' => 'Login successful!',

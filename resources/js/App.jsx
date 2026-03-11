@@ -14,7 +14,10 @@ import DashboardPage from './pages/Dashboard/DashboardPage';
 // layouts and routes
 import AppLayout from './layouts/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute'
-import EmployeeAccountsPage from './pages/UserManagement/EmployeeAccountsPage';
+import EmployeeAccountsPage from './pages/EmployeeAccount/UserManagement/EmployeeAccountsPage';
+import PersonalInformationPage from './pages/StudentAccount/MyProfile/PersonalInformationPage';
+import EducationalBackgroundPage from './pages/StudentAccount/MyProfile/EducationalBackgroundPage';
+import FamilyBackgroundPage from './pages/StudentAccount/MyProfile/FamilyBackgroundPage';
 
 function App() {
     const dispatch = useDispatch();
@@ -75,6 +78,12 @@ function App() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/dashboard" element={<DashboardPage />} />
 
+                    {/* --- PROTECTED ROUTES FOR STUDENT ACCOUNTs --- */}
+                    <Route path="/mp/personal-information" element={<PersonalInformationPage />} />
+                    <Route path="/mp/educational-background" element={<EducationalBackgroundPage />} />
+                    <Route path="/mp/family-background" element={<FamilyBackgroundPage />} />
+
+                    {/* --- PROTECTED ROUTES FOR EMPLOYEE ACCOUNTs --- */}
                     <Route path="/um/employees" element={<EmployeeAccountsPage />} />
                 </Route>
               </Route>

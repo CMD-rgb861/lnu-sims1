@@ -19,34 +19,32 @@ const AppLayout = () => {
         if (user_type === 'Student') {
             return <StudentSidebarComponent />;
         }
-            return <EmployeeSidebarComponent />;
+        return <EmployeeSidebarComponent />;
     };
 
     return (
         <AppShell
-        py={30}
         px={20}
         header={{ height: 50 }}
         navbar={{
             width: { sm: 250, lg: 300 },
-            breakpoint: 'md',
-            collapsed: { mobile: !opened }, 
+            breakpoint: 'lg',
+            collapsed: { mobile: !opened}, 
         }}
         >
         <AppShell.Header>
-            <Group 
-                justify="space-between"
-                p="sm"
-            >
-                <Burger
-                opened={opened}
-                onClick={toggle}
-                hiddenFrom="md"
-                size="xs"
-                />
-                <Group>
-                <HeaderLogoComponent />
-                <Code fw={500}>v{version}</Code>
+            <Group justify="space-between" align="center" h="100%" px="sm" wrap="nowrap">
+                <Group wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+                    <Burger
+                        opened={opened}
+                        onClick={toggle}
+                        hiddenFrom="lg"
+                        size="sm"
+                    />
+                    <Group wrap="nowrap" gap="xs" style={{ overflow: 'hidden' }}>
+                        <HeaderLogoComponent />
+                        <Code fw={500}>v{version}</Code>
+                    </Group>
                 </Group>
                 <ColorSchemeToggleComponent />
             </Group>
@@ -54,7 +52,7 @@ const AppLayout = () => {
 
         {renderSidebar()}
 
-        <AppShell.Main>
+        <AppShell.Main pt={80}>
             <Outlet />
         </AppShell.Main>
         </AppShell>

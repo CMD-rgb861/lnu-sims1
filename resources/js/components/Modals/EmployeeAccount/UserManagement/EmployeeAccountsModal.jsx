@@ -22,8 +22,6 @@ const EmployeeAccountsModal = ({
   onSubmit,
   employeeToEdit,
   isSubmitting,
-  // Pass these array props from your parent component to populate the selects:
-  // e.g., [{ value: '1', label: 'Admin' }, ...]
   userTypes = [], 
   userRoles = [],
   colleges = [],

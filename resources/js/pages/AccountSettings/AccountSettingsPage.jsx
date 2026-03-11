@@ -18,7 +18,7 @@ import UserSettingSecurityForm from '../../components/Forms/UserSettingsSecurity
 
 const ROWS_PER_PAGE = 10;
 
-const UserSettingsPage = () => {
+const AccountSettingsPage = () => {
   // Breadcrumbs items
   const items = [
     { title: 'Home', href: '/dashboard' },
@@ -176,4 +176,4 @@ const UserSettingsPage = () => {
   );
 };
 
-export default UserSettingsPage;
+export default AccountSettingsPage;

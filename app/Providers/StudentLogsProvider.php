@@ -24,17 +24,17 @@ class StudentLogsProvider extends ServiceProvider
         //
     }
 
-    public static function log($description, $event, $scope)
+    public static function log($description, $event, $scope, $userId = null)
     {
         try {
-            $user = Auth::user();
+            $studentId = $userId ?? Auth::guard('student')->id();
 
-            if ($user) {
+            if ($studentId) {
                 StudentLog::create([
                     'log_description' => $description,
                     'event' => $event,
                     'scope' => $scope,
-                    'student_account_id' => $user->id,
+                    'student_account_id' => $studentId,
                 ]);
             }
 
