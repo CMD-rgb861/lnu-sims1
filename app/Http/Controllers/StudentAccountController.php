@@ -243,6 +243,13 @@ class StudentAccountController extends Controller
             $studentProfile->save();
             $studentProfile->refresh();
 
+            //Log user activity
+            StudentLogsProvider::log(
+                'Uploaded/Updated profile picture/e-signature',
+                5,
+                'My Profile'
+            );
+
             DB::commit();
 
             return response()->json([

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CollegeController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\EducBackgroundController;
 use App\Http\Controllers\NationalityController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\PSGCController;
@@ -100,8 +101,12 @@ Route::middleware('auth:sanctum')->group(function () {
     //MY PROFILE ROUTES
     Route::prefix('/mp/')->name('my_profile.')->group(function() {
         Route::get('/fetch/student-details/{id}', [StudentAccountController::class, 'fetchStudentAccountDetails'])->name('fetchStudentAccountDetails');
+        Route::get('/fetch/educ-background/{id}', [EducBackgroundController::class, 'fetchEducationalBackground'])->name('fetchEducationalBackground');
+        Route::get('/fetch/educ-schools/search', [EducBackgroundController::class, 'fetchSchools'])->name('fetchSchools');
         Route::post('/upload-pictures', [StudentAccountController::class, 'uploadStudentPictures'])->name('uploadStudentPictures');
         Route::put('/update-personal-info', [StudentAccountController::class, 'updateStudentProfileInfo'])->name('updateStudentProfileInfo');
+        Route::put('/update-educ-background/{id}', [EducBackgroundController::class, 'createEducationalBackground'])->name('createEducationalBackground');
+        Route::delete('/delete-educ-background/{id}', [EducBackgroundController::class, 'deleteEducationalBackground'])->name('deleteEducationalBackground');
     });
     
 });

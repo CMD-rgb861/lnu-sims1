@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EducBackground;
 use App\Models\StudentAccount;
+use App\Providers\StudentLogsProvider;
 use App\Providers\UserLogsProvider;
 
 use Illuminate\Http\Request;
@@ -14,30 +15,20 @@ use Illuminate\Support\Facades\DB;
 class EducBackgroundController extends Controller
 {
 
-    // Reusable function for student profile information
-    private function getEducBackgroundData($id)
+    public function fetchEducationalBackground($id)
     {
-        $studentAccount = StudentAccount::findOrFail($id);
-        $educBackgrounds = EducBackground::where('student_account_id', $id)->get();
-
+        // Assuming you have an API route like: GET /api/students/{id}/education
+        $educBackgrounds = EducBackground::with('school') // <-- MUST HAVE THIS
+            ->where('student_account_id', $id)
+            ->get();
         $academicLevels = DB::table('educ_background_levels')->orderBy('id', 'asc')->get();
 
-        return compact(
-            'educBackgrounds',
-            'academicLevels',
-        );
+        return response()->json([
+            'records' => $educBackgrounds,
+            'levels' => $academicLevels,
+        ]);
     }
 
-    // Show educ background details in student account
-    public function educBackgroundIndex()
-    {
-        $id = Auth::id();
-        $data = $this->getEducBackgroundData($id);
-
-        return view('pages.students.my_profile.educational_background_layout', $data);
-    }
-
-    // Fetch schools for autosuggestion
     public function fetchSchools(Request $request)
     {
         $term = trim($request->get('term', ''));
@@ -55,97 +46,54 @@ class EducBackgroundController extends Controller
             ->limit(10)
             ->get(['name', 'abbreviation']);
 
-        // You can format the output however you want:
         $formatted = $schools->map(function ($school) {
-            return [
-                'label' => $school->name . 
-                        ($school->abbreviation ? " ({$school->abbreviation})" : ''),
-                'value' => $school->name
-            ];
+            return $school->abbreviation 
+                ? "{$school->name}" 
+                : $school->name;
         });
-
-        if ($schools->isEmpty()) {
-            return response()->json(['debug' => "No matches found for '{$term}'"]);
-        }
 
         return response()->json($formatted);
     }
 
     // Create educational background
-    public function createEducationalBackground(Request $request)
+    public function createEducationalBackground(Request $request, $targetId = null)
     {
         $validator = Validator::make($request->all(), [
-            'level_id'         => 'required|array',
-            'level_id.*'       => 'required|integer',
-
-            'school_id'        => 'required|array',
-            'school_id.*'      => 'required|string',
-
-            'period_from'      => 'required|array',
-            'period_from.*'    => 'required|string',
-
-            'period_to'        => 'required|array',
-            'period_to.*'      => 'required|string',
-
-            'year_graduated'   => 'required|array',
-            'year_graduated.*' => 'required|string',
-
-            'honors'           => 'nullable|array',
-            'honors.*'         => 'nullable|string|max:255',
-
-            'degree'           => 'nullable|array',
-            'degree.*'         => 'nullable|string|max:255',
-
-            'units_earned'     => 'nullable|array',
-            'units_earned.*'   => 'nullable',
+            'records'                  => 'required|array',
+            'records.*.level_id'       => 'required',
+            'records.*.school_id'      => 'required|string',
+            'records.*.period_from'    => 'required|string',
+            'records.*.period_to'      => 'required|string',
+            'records.*.year_graduated' => 'required|string',
+            'records.*.honors'         => 'nullable|string|max:255',
+            'records.*.degree'         => 'nullable|string|max:255',
+            'records.*.units_earned'   => 'nullable',
         ]);
         
-        if ($validator->fails()) 
-        {
-            if ($request->ajax()) 
-            {
-                return response()->json([
-                    'errors' => $validator->errors(),
-                ], 422);
-            }
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
         DB::beginTransaction();
 
         try {
-            $id = request('studentId');
+            // Get student ID from URL parameter or request payload
+            $id = $targetId ?? $request->input('student_id') ?? request('studentId');
+            $records = $request->input('records', []);
 
-            if(!$id){
-                $id = $request->input('student_id');
-            }
-
-            $student = StudentAccount::findOrFail($id);
-            $studentName = $student->first_name .' '. $student->last_name;
-
-            $editIds = $request->input('edit_id');
-            $levels = $request->input('level_id');
-            $schoolNames = $request->input('school_id', []);
-            $periodFroms = $request->input('period_from', []); 
-            $periodTos = $request->input('period_to', []); 
-            $yearGraduateds = $request->input('year_graduated', []); 
-            $honors = $request->input('honors', []); 
-            $degrees = $request->input('degree', []); 
-            $unitsEarneds = $request->input('units_earned', []); 
-
-            foreach ($levels as $i => $levelId) {
-                $schoolName = $schoolNames[$i] ?? '';
-                if (is_array($schoolName)) {
-                    $schoolName = implode(' ', $schoolName); 
-                }
-                $schoolName = trim((string) $schoolName);
-
-                $editId = $editIds[$i] ?? null;
-                $periodFrom = $periodFroms[$i] ?? null;
-                $periodTo = $periodTos[$i] ?? null;
-                $yearGraduated = $yearGraduateds[$i] ?? null;
-                $honor = $honors[$i] ?? null;
-                $degree = $degrees[$i] ?? null;
-                $unitEarned = $unitsEarneds[$i] ?? null;
+            foreach ($records as $record) {
+                
+                // Map the object properties
+                $levelId       = $record['level_id'];
+                $schoolId      = $record['school_id'];
+                $schoolName    = trim((string) ($record['school_id'] ?? ''));
+                $editId        = $record['id'] ?? null;
+                $periodFrom    = $record['period_from'] ?? null;
+                $periodTo      = $record['period_to'] ?? null;
+                $yearGraduated = $record['year_graduated'] ?? null;
+                $honor         = $record['honors'] ?? null;
+                $degree        = $record['degree'] ?? null;
+                $unitEarned    = $record['units_earned'] ?? null;
 
                 $delimiters = [' ', ',', '_', '-'];
                 $parts = [$schoolName];
@@ -158,10 +106,7 @@ class EducBackgroundController extends Controller
                     $parts = $newParts;
                 }
 
-                // Remove empties
                 $parts = array_filter($parts);
-
-                // Take first letter of each word
                 $abbreviation = strtoupper(implode('', array_map(fn($w) => $w[0] ?? '', $parts)));
 
                 $schoolId = null;
@@ -199,37 +144,25 @@ class EducBackgroundController extends Controller
 
             DB::commit();
 
-            // Log user activity
-            UserLogsProvider::log('created educational background for: ' . $studentName);
+            //Log user activity
+            StudentLogsProvider::log(
+                'Created/Updated educational background records',
+                3,
+                'My Profile'
+            );
 
-            if ($request->ajax()) {
-                return response()->json([
-                    'message' => 'Student profile update successfully!',
-                    'type' => 'success',
-                ], 200);
-            } else {
-                // If it's a normal form submission
-                return redirect()->back()->with('toast', [
-                    'text' => 'Student profile update successfully!',
-                    'type' => 'success',
-                ]);
-            }
+            return response()->json([
+                'message' => 'Student profile updated successfully!',
+                'type' => 'success',
+            ], 200);
 
         } catch (\Exception $e) {
             DB::rollback();
-            if ($request->ajax()) {
-                return response()->json([
-                    'message' => 'Failed updating student profile!' . $e->getMessage(),
-                    'type' => 'success',
-                ], 200);
-            } else {
-                return redirect()->back()->with('toast', [
-                    'text' => 'Failed updating student profile!' . $e->getMessage(),
-                    'type' => 'success',
-                ]);
-            }
+            return response()->json([
+                'message' => 'Failed updating student profile! ' . $e->getMessage(),
+                'type' => 'error', 
+            ], 500); 
         }
-         
     }
 
     // Delete educational background
@@ -240,8 +173,12 @@ class EducBackgroundController extends Controller
             $educBackground = EducBackground::with(['student_account'])->findOrFail($id);
             $educBackground->delete();
             
-            // Log user activity
-            UserLogsProvider::log('deleted educational background record for acount: ' . $educBackground->student_account->first_name . ' ' . $educBackground->student_account->last_name);
+            //Log user activity
+            StudentLogsProvider::log(
+                'Deleted educational background record',
+                4,
+                'My Profile'
+            );
 
             DB::commit();
 

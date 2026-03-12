@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
@@ -17,18 +17,17 @@ import {
   Switch,
   Image,
   Button,
-  Badge
+  Badge,
+  LoadingOverlay
 } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
-import { IconUser, IconSignature, IconAlertCircle, IconAlertTriangle, IconArrowBarToUp, IconSettings2 } from '@tabler/icons-react';
+import { useForm } from '@mantine/form';
+import { IconUser, IconSignature, IconAlertCircle, IconAlertTriangle, IconArrowBarToUp, IconSettings2, IconDeviceFloppy, IconPlus } from '@tabler/icons-react';
 
 import axiosClient from '../../../api/axiosClient';
 import { getDiceBearAvatar } from '../../../plugins/dicebear'; 
 import { useAuth } from '../../../hooks/useAuth';
-import PersonalInformationForm from '../../../components/Forms/StudentAccount/PersonalInformationForm';
-import ChangeProfilePictureModal from '../../../components/Modals/StudentAccount/ChangeProfilePictureModal';
-import ChangeAccountPasswordModal from '../../../components/Modals/StudentAccount/ChangeAccountPasswordModal';
 
+import EducationalBackgroundForm from '../../../components/Forms/StudentAccount/EducationalBackgroundForm';
 
 const EducationalBackgroundPage = () => {
     // Breadcrumbs items
@@ -52,168 +51,185 @@ const EducationalBackgroundPage = () => {
     const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
     const dicebearUrl = getDiceBearAvatar(fullName, 'initials');
 
-    const [studentDetails, setStudentDetails] = useState(null); 
-    const [studentProfilePic, setStudentProfilePic] = useState(null); 
-    const [studentSignature, setStudentSignature] = useState(null); 
-    const [dropdownData, setDropdownData] = useState({
-        nationalities: [],
-        regions: [],
-        provinces: [],
-        municipalities: [],
-        barangays: []
-    });
+    const [educationRecords, setEducationRecords] = useState([]);
+    const [academicLevels, setAcademicLevels] = useState([]);
+    const form = useForm({
+        initialValues: {
+            records: [
+                { 
+                    id: null, 
+                    level_id: '', 
+                    school_id: '', 
+                    period_from: '', 
+                    period_to: '', 
+                    year_graduated: '', 
+                    honors: '', 
+                    degree: '', 
+                    units_earned: '' 
+                }
+            ],
+        },
 
+        validate: {
+            records: {
+                level_id: (value) => (!value ? 'Academic level is required' : null),
+                school_id: (value) => (!value ? 'School name is required' : null),
+                period_from: (value) => (!value ? 'Start year is required' : null),
+                period_to: (value) => (!value ? 'End year is required' : null),
+                year_graduated: (value) => (!value ? 'Year graduated is required' : null),
+            }
+        }
+    });
+    
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showSignature, setShowSignature] = useState(false);
-
-    const [pictureModalOpened, { open: openPictureModal, close: closePictureModal }] = useDisclosure(false);
-    const [passwordModalOpened, { open: openPasswordModal, close: closePasswordModal }] = useDisclosure(false);
-
-    const STORAGE_URL = import.meta.env.VITE_API_BASE_URL 
-        ? `${import.meta.env.VITE_API_BASE_URL}/storage/` 
-        : 'http://localhost:8000/storage/';
 
     const refetchData = async () => {
         try {
-            const [studentDetailsReponse, nationalitiesResponse] = await Promise.all([
-            axiosClient.get(`api/mp/fetch/student-details/${user.id}`),
+            const targetId = user.id; 
+            const [educBackgroundResponse] = await Promise.all([
+                axiosClient.get(`/api/mp/fetch/educ-background/${targetId}`), 
             ]);
-            setStudentDetails(studentDetailsReponse.data);
-            setStudentProfilePic(studentDetailsReponse.data.studentProfile.profile_pic);
-            setStudentSignature(studentDetailsReponse.data.studentProfile.e_signature);
-            setDropdownData({
-            nationalities: studentDetailsReponse.data.nationalities || [],
-            regions: studentDetailsReponse.data.regions || [],
-            provinces: studentDetailsReponse.data.provinces || [],
-            municipalities: studentDetailsReponse.data.municipalities || [],
-            barangays: studentDetailsReponse.data.barangays || []
-            });
+
+            const fetchedRecords = educBackgroundResponse.data.records;
+
+            if (fetchedRecords.length > 0) {
+                const formattedRecords = fetchedRecords.map(record => ({
+                    ...record,
+                    level_id: record.level_id ? String(record.level_id) : '',
+                    period_from: record.period_from ? String(record.period_from) : '',
+                    period_to: record.period_to ? String(record.period_to) : '',
+                    year_graduated: record.year_graduated ? String(record.year_graduated) : '',
+                }));
+                form.setValues({ records: formattedRecords });
+            } else {
+                form.setValues({ records: [{
+                    id: null, level_id: '', school_id: '', period_from: '',
+                    period_to: '', year_graduated: '', honors: 'N/A', 
+                    degree: 'N/A', units_earned: ''
+                }]});
+            }
+            setAcademicLevels(educBackgroundResponse.data.levels);
         } catch (error) {
-        console.error("Failed to refetch data:", error);
+            console.error("Failed to refetch data:", error);
         }
     };
 
     useEffect(() => {
-        const fetchData = async () => {
-        setLoading(true);
-        try {
-            const [studentDetailsReponse] = await Promise.all([
-            axiosClient.get(`api/mp/fetch/student-details/${user.id}`),
-            ]);
-            setStudentDetails(studentDetailsReponse.data);
-            setStudentProfilePic(studentDetailsReponse.data.studentProfile.profile_pic);
-            setStudentSignature(studentDetailsReponse.data.studentProfile.e_signature);
-            setDropdownData({
-            nationalities: studentDetailsReponse.data.nationalities || [],
-            regions: studentDetailsReponse.data.regions || [],
-            provinces: studentDetailsReponse.data.provinces || [],
-            municipalities: studentDetailsReponse.data.municipalities || [],
-            barangays: studentDetailsReponse.data.barangays || []
-            });
-        } catch (error) {
-            console.error("Failed to refetch data:", error);
-        } finally {
-            setLoading(false);
-        }
-        };
-        fetchData();
-    }, []);
+        const fetchEducationalData = async () => {
+            try {
+                const targetId = user.id; 
+                const [educBackgroundResponse] = await Promise.all([
+                    axiosClient.get(`/api/mp/fetch/educ-background/${targetId}`), 
+                ]);
 
-    const handleUpdatePersonalInfo = async (values) => {
-        setIsSubmitting(true);
-        setLoading(true);
-        try {
-        const payload = { 
-            ...values
+                const fetchedRecords = educBackgroundResponse.data?.records || [];
+                const fetchedLevels = educBackgroundResponse.data?.levels || [];
+
+                setAcademicLevels(fetchedLevels);
+
+                if (fetchedRecords.length > 0) {
+                    const formattedRecords = fetchedRecords.map(record => ({
+                        ...record,
+                        level_id: record.level_id ? String(record.level_id) : '',
+                        school_id: record.school?.name ? record.school.name : (record.school_id ? String(record.school_id) : ''),
+                        period_from: record.period_from ? String(record.period_from) : '',
+                        period_to: record.period_to ? String(record.period_to) : '',
+                        year_graduated: record.year_graduated ? String(record.year_graduated) : '',
+                    }));
+                    form.setValues({ records: formattedRecords });
+                }
+            } catch (error) {
+                console.error("Error fetching educational background", error);
+            } finally {
+                setLoading(false);
+            }
         };
-        await axiosClient.put(`api/mp/update-personal-info`, payload);
-        await refetchData();
-        } catch (error) {
-        //
-        } finally {
-        setIsSubmitting(false);
-        setLoading(false);
+
+        if (user.id) {
+            fetchEducationalData();
         }
+    }, [user.id]);
+
+
+    const handleRecordChange = (index, field, value) => {
+        const updatedRecords = [...educationRecords];
+        updatedRecords[index][field] = value;
+        setEducationRecords(updatedRecords);
     };
 
-    // Handle uploading of profile picture and e-signature
-    const handlePictureUpload = async (files) => {
+    const handleAddRecord = () => {
+        form.insertListItem('records', {
+            id: null, level_id: '', school_id: '', period_from: '',
+            period_to: '', year_graduated: '', honors: 'N/A', 
+            degree: 'N/A', units_earned: ''
+        });
+       
+    };
+
+    const handleRemoveRecord = async (index, recordId) => {
+        if (recordId) {
+            try {
+                setLoading(true);
+                await axiosClient.delete(`/api/mp/delete-educ-background/${recordId}`);
+            } catch (error) {
+                console.error("Failed to delete record", error);
+                setLoading(false);
+                return; 
+            }
+        }
+
+        form.removeListItem('records', index);
+        setLoading(false);
+    };
+
+    const handleSaveAll = async () => {
+        const validation = form.validate();
+
+        if (validation.hasErrors) {
+            return; 
+        }
+
         setIsSubmitting(true);
+        const id = user.id
+
         try {
-            const formData = new FormData();
-
-            formData.append('id', user.id);
-            
-            if (files.profile_pic) {
-            formData.append('profile_pic', files.profile_pic);
-            }
-            if (files.e_signature) {
-            formData.append('e_signature', files.e_signature);
-            }
-
-            await axiosClient.post(`api/mp/upload-pictures`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
+            await axiosClient.put(`/api/mp/update-educ-background/${id}`, {
+                records: form.values.records
             });
-
-            await refetchData(); 
-            closePictureModal(); 
+            setLoading(true);
         } catch (error) {
-            console.error("Upload failed", error);
+            console.error("Failed to save records", error);
         } finally {
             setIsSubmitting(false);
-        }
-    };
-
-    // Handle update of account password
-    const handlePasswordSubmit = async (passwordData) => {
-        setIsSubmitting(true);
-        try {
-        // passwordData contains: current_password, new_password, new_password_confirmation
-        const response = await axiosClient.put('/api/mp/change-password', {
-            id: studentId,
-            ...passwordData
-        });
-        
-        console.log('Password updated successfully');
-        setOpened(false); // Close modal on success
-        
-        // Show success toast/notification here
-
-        } catch (error) {
-        console.error('Failed to update password', error.response?.data);
-        // Show error toast/notification here based on Laravel validation errors
-        } finally {
-        setIsSubmitting(false);
+            setLoading(false);
         }
     };
 
     if (loading) {
         return (
-        <Grid>
-            <Grid.Col span={12}>
-            <Breadcrumbs separator=">" mb="md" fw={400} fz="xs">
-                {items}
-            </Breadcrumbs>
-            <Divider mb="lg" />
-            <Title align="left" order={2} mb={4} fw={600} fz={20}>
-                Educational Background
-            </Title>
-            <Text fz="xs" fw={500} mb="lg" c="dimmed">Manage your educational background for student profiling.</Text>
-            
             <Grid>
                 <Grid.Col span={12}>
-                    <Paper withBorder radius="lg" p="lg">
-                        {Array.from({ length: 12 }).map((_, index) => (
-                        <Skeleton key={index} height={40} mb="md" radius="md" />
-                        ))}
-                    </Paper>
+                <Breadcrumbs separator=">" mb="md" fw={400} fz="xs">
+                    {items}
+                </Breadcrumbs>
+                <Divider mb="lg" />
+                <Title align="left" order={2} mb={4} fw={600} fz={20}>
+                    Educational Background
+                </Title>
+                <Text fz="xs" fw={500} mb="lg" c="dimmed">Manage your educational background for student profiling.</Text>
+                
+                <Grid>
+                    <Grid.Col span={12}>
+                        <Paper withBorder radius="lg" p="lg">
+                            {Array.from({ length: 12 }).map((_, index) => (
+                                <Skeleton key={index} height={40} mb="md" radius="md" />
+                            ))}
+                        </Paper>
+                    </Grid.Col>
+                </Grid>
                 </Grid.Col>
             </Grid>
-            </Grid.Col>
-        </Grid>
         );
     }
 
@@ -223,16 +239,48 @@ const EducationalBackgroundPage = () => {
                 <Grid.Col span={12}>
                     <Breadcrumbs separator=">" mb="md" fw={400}>{items}</Breadcrumbs>
                     <Divider mb="lg" />
+                    <LoadingOverlay visible={loading} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
                     <Title align="left" order={2} mb={4} fw={600} fz={20}>
-                    Educational Background
+                        Educational Background
                     </Title>
                     <Text fz="xs" fw={500} mb="lg" c="dimmed">Manage your educational background for student profiling.</Text>
-
                     {/* Educational Background Fields */}
                     <Grid>
                         <Grid.Col span={12}>
                             <Paper withBorder radius="lg" p="lg">
-                                <Text fz="md" fw={600}>Previously Attended Schools</Text>
+                                <Text fz="md" fw={600} mb="md">Previously Attended Schools</Text>
+                                <Stack gap="lg">
+                                   {form.values.records?.map((record, index) => (
+                                        <EducationalBackgroundForm
+                                            key={record.id || `new-${index}`} 
+                                            index={index}
+                                            form={form} 
+                                            academicLevels={academicLevels}
+                                            onDelete={handleRemoveRecord}
+                                        />
+                                    ))}
+
+                                    {/* Buttons to Add More or Save */}
+                                    <Group justify="right" mt="md">
+                                    <Button 
+                                        variant="light" 
+                                        color="gray"
+                                        fz="xs"
+                                        onClick={handleAddRecord} 
+                                    >
+                                        Add Another Level
+                                    </Button>
+
+                                    <Button 
+                                        color="teal" 
+                                        fz="xs"
+                                        onClick={handleSaveAll} 
+                                        loading={isSubmitting}
+                                    >
+                                        Save Changes
+                                    </Button>
+                                    </Group>
+                                </Stack>
                             </Paper>
                         </Grid.Col>
                     </Grid>
