@@ -1,4 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { logoutUser } from '../../store/slices/AuthSlice';
 
 import {
@@ -27,6 +28,7 @@ export const SidebarFooterComponent = () => {
 
     const { user } = useAuth();
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     
     if (!user) {
         return null; 
@@ -41,68 +43,68 @@ export const SidebarFooterComponent = () => {
 
     const dicebearUrl = getDiceBearAvatar(fullName, 'initials');
 
-  return (
-    <AppShell.Section className="footer" mb={10}>
-      {user && (
-        <Box>
-          <Menu shadow="md" width={230} position="top-end">
-            <Menu.Target>
-              <UnstyledButton
-                sx={(theme) => ({
-                  display: 'block',
-                  width: '100%',
-                  padding: theme.spacing.sm,
-                  borderRadius: theme.radius.sm,
-                })}
-              >
-                <Group gap="md">
-                  <Avatar
-                    src={`${STORAGE_URL}${user.student_profile?.profile_pic}` || dicebearUrl}
-                    alt={fullName || 'User'}
-                    radius="xl"
-                    size="md"
-                  >
-                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                  </Avatar>
+    return (
+        <AppShell.Section className="footer" mb={10}>
+        {user && (
+            <Box>
+            <Menu shadow="md" width={230} position="top-end">
+                <Menu.Target>
+                <UnstyledButton
+                    sx={(theme) => ({
+                    display: 'block',
+                    width: '100%',
+                    padding: theme.spacing.sm,
+                    borderRadius: theme.radius.sm,
+                    })}
+                >
+                    <Group gap="md">
+                    <Avatar
+                        src={`${STORAGE_URL}${user.student_profile?.profile_pic}` || dicebearUrl}
+                        alt={fullName || 'User'}
+                        radius="xl"
+                        size="md"
+                    >
+                        {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </Avatar>
 
-                  <Box sx={{ flex: 1 }}>
-                    <Text className="profile-name" size="xs" fw={700} fz="xs">
-                      {fullName || 'User'}
-                    </Text>
-                    <Text c="dimmed" size="xs" fw={500}>
-                      {user.id_number || '--'}
-                    </Text>
-                  </Box>
+                    <Box sx={{ flex: 1 }} w={150}>
+                        <Text className="profile-name" size="xs" fw={700} fz="xs" truncate="end">
+                        {fullName || 'User'}
+                        </Text>
+                        <Text c="dimmed" size="xs" fw={500}>
+                        {user.id_number || '--'}
+                        </Text>
+                    </Box>
 
-                  <IconChevronRight size={16} color="gray" />
-                </Group>
-              </UnstyledButton>
-            </Menu.Target>
+                    <IconChevronRight size={16} color="gray" />
+                    </Group>
+                </UnstyledButton>
+                </Menu.Target>
 
-            <Menu.Dropdown>
-              <Menu.Label>Menu</Menu.Label>
-              <Menu.Item
-                leftSection={<IconUser size={16} />}
-                onClick={() => console.log('Go to settings')}
-              >
-                My Profile
-              </Menu.Item>
+                <Menu.Dropdown>
+                <Menu.Label>Menu</Menu.Label>
+                <Menu.Item
+                    leftSection={<IconUser size={16} />}
+                    onClick={() => navigate('/mp/personal-information')}
+                >
+                    My Profile
+                </Menu.Item>
 
-              <Menu.Divider />
+                <Menu.Divider />
 
-              <Menu.Item
-                color="red"
-                leftSection={<IconLogout size={16} />}
-                onClick={handleLogout}
-              >
-                Logout
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-        </Box>
-      )}
-    </AppShell.Section>
-  );
+                <Menu.Item
+                    color="red"
+                    leftSection={<IconLogout size={16} />}
+                    onClick={handleLogout}
+                >
+                    Logout
+                </Menu.Item>
+                </Menu.Dropdown>
+            </Menu>
+            </Box>
+        )}
+        </AppShell.Section>
+    );
 };
 
 export default SidebarFooterComponent;

@@ -55,122 +55,123 @@ const EducationalBackgroundForm = ({ form, index, academicLevels, onChange, onDe
     const showDegreeAndUnits = currentRecord?.level_id == 5 || currentRecord?.level_id == 6;
 
     return (
-        <Grid>
-            <Grid.Col span={{ base: 12, md: 4 }}>
-                <Select
-                    withAsterisk
-                    label="Academic Level"
-                    placeholder="Select Academic Level"
-                    data={academicLevels.map(level => ({ value: level.id.toString(), label: level.name }))}
-                    searchable
-                    clearable
-                    {...form.getInputProps(`records.${index}.level_id`)}
-                />
-                </Grid.Col>
-                
-                <Grid.Col span={{ base: 12, md: 8 }}>
-                <Autocomplete
-                    withAsterisk
-                    label="School Name"
-                    placeholder="Type to search school..."
-                    data={schoolOptions}
-                    value={searchValue}
-                    onChange={handleSchoolChange}
-                    maxDropdownHeight={200}
-                    error={form.errors[`records.${index}.school_id`]}
-                />
-                </Grid.Col>
-
-                {/* Row 2: Attended From, To, Graduated, Honors */}
-                <Grid.Col span={{ base: 12, md: 2 }}>
-                <Select
-                    withAsterisk
-                    label="Attended From"
-                    placeholder="Select Year"
-                    data={fromYears}
-                    onChange={(val) => handleChange('period_from', val)}
-                    searchable
-                    clearable
-                    {...form.getInputProps(`records.${index}.period_from`)}
-                />
-                </Grid.Col>
-
-                <Grid.Col span={{ base: 12, md: 2 }}>
-                <Select
-                    withAsterisk
-                    label="Attended To"
-                    placeholder="Select Year"
-                    data={toYears}
-                    onChange={(val) => handleChange('period_to', val)}
-                    searchable
-                    clearable
-                    disabled={!currentRecord.period_from}
-                    {...form.getInputProps(`records.${index}.period_to`)}
-                />
-                </Grid.Col>
-
-                <Grid.Col span={{ base: 12, md: 2 }}>
-                <Select
-                    withAsterisk
-                    label="Year Graduated"
-                    placeholder="Select Year"
-                    data={gradYears}
-                    onChange={(val) => handleChange('year_graduated', val)}
-                    searchable
-                    clearable
-                    {...form.getInputProps(`records.${index}.year_graduated`)}
-                />
-                </Grid.Col>
-
-                <Grid.Col span={{ base: 12, md: 6 }}>
-                <TextInput
-                    label="Honors Received"
-                    placeholder="e.g., Cum Laude, Valedictorian"
-                    onChange={(e) => handleChange('honors', e.currentTarget.value)}
-                    {...form.getInputProps(`records.${index}.honors`)}
-                />
-                </Grid.Col>
-
-                {/* Row 3 (Conditional): Degree & Units Earned */}
-                {showDegreeAndUnits && (
-                <>
+        <Paper withBorder px="lg" pt="xl" pb="lg" radius="lg">
+            <Grid>
+                <Grid.Col span={{ base: 12, md: 4 }}>
+                    <Select
+                        withAsterisk
+                        label="Academic Level"
+                        placeholder="Select Academic Level"
+                        data={academicLevels.map(level => ({ value: level.id.toString(), label: level.name }))}
+                        searchable
+                        clearable
+                        {...form.getInputProps(`records.${index}.level_id`)}
+                    />
+                    </Grid.Col>
+                    
                     <Grid.Col span={{ base: 12, md: 8 }}>
+                    <Autocomplete
+                        withAsterisk
+                        label="School Name"
+                        placeholder="Type to search school..."
+                        data={schoolOptions}
+                        value={searchValue}
+                        onChange={handleSchoolChange}
+                        maxDropdownHeight={200}
+                        error={form.errors[`records.${index}.school_id`]}
+                    />
+                    </Grid.Col>
+
+                    {/* Row 2: Attended From, To, Graduated, Honors */}
+                    <Grid.Col span={{ base: 12, md: 2 }}>
+                    <Select
+                        withAsterisk
+                        label="Attended From"
+                        placeholder="Select Year"
+                        data={fromYears}
+                        onChange={(val) => handleChange('period_from', val)}
+                        searchable
+                        clearable
+                        {...form.getInputProps(`records.${index}.period_from`)}
+                    />
+                    </Grid.Col>
+
+                    <Grid.Col span={{ base: 12, md: 2 }}>
+                    <Select
+                        withAsterisk
+                        label="Attended To"
+                        placeholder="Select Year"
+                        data={toYears}
+                        onChange={(val) => handleChange('period_to', val)}
+                        searchable
+                        clearable
+                        disabled={!currentRecord.period_from}
+                        {...form.getInputProps(`records.${index}.period_to`)}
+                    />
+                    </Grid.Col>
+
+                    <Grid.Col span={{ base: 12, md: 2 }}>
+                    <Select
+                        withAsterisk
+                        label="Year Graduated"
+                        placeholder="Select Year"
+                        data={gradYears}
+                        onChange={(val) => handleChange('year_graduated', val)}
+                        searchable
+                        clearable
+                        {...form.getInputProps(`records.${index}.year_graduated`)}
+                    />
+                    </Grid.Col>
+
+                    <Grid.Col span={{ base: 12, md: 6 }}>
                     <TextInput
-                        label="Senior High School Strand / College Degree"
-                        placeholder="Degree or Strand"
-                        onChange={(e) => handleChange('degree', e.currentTarget.value)}
-                        {...form.getInputProps(`records.${index}.degree`)}
+                        label="Honors Received"
+                        placeholder="e.g., Cum Laude, Valedictorian"
+                        onChange={(e) => handleChange('honors', e.currentTarget.value)}
+                        {...form.getInputProps(`records.${index}.honors`)}
                     />
                     </Grid.Col>
 
-                    <Grid.Col span={{ base: 12, md: 4 }}>
-                    <NumberInput
-                        label="Units Earned"
-                        placeholder="Units Earned"
-                        onChange={(val) => handleChange('units_earned', val)}
-                        min={0}
-                        {...form.getInputProps(`records.${index}.units_earned`)}
-                    />
-                    </Grid.Col>
-                </>
-                )}
+                    {/* Row 3 (Conditional): Degree & Units Earned */}
+                    {showDegreeAndUnits && (
+                    <>
+                        <Grid.Col span={{ base: 12, md: 8 }}>
+                        <TextInput
+                            label="Senior High School Strand / College Degree"
+                            placeholder="Degree or Strand"
+                            onChange={(e) => handleChange('degree', e.currentTarget.value)}
+                            {...form.getInputProps(`records.${index}.degree`)}
+                        />
+                        </Grid.Col>
 
-                {/* Row 4: Action Button */}
-                <Grid.Col span={12}>
-                <Group justify="right" mt="xs">
-                    <Button 
-                        color="red" 
-                        variant="subtle" 
-                        leftSection={<IconTrash size={16} />}
-                        onClick={() => onDelete(index, currentRecord.id)}
-                        fz="xs"
-                    >
-                    Remove Level
-                    </Button>
-                </Group>
-                 <Divider my="md" />
-            </Grid.Col>
-        </Grid>
+                        <Grid.Col span={{ base: 12, md: 4 }}>
+                        <NumberInput
+                            label="Units Earned"
+                            placeholder="Units Earned"
+                            onChange={(val) => handleChange('units_earned', val)}
+                            min={0}
+                            {...form.getInputProps(`records.${index}.units_earned`)}
+                        />
+                        </Grid.Col>
+                    </>
+                    )}
+
+                    {/* Row 4: Action Button */}
+                    <Grid.Col span={12}>
+                    <Group justify="right" mt="xs">
+                        <Button 
+                            color="red" 
+                            variant="subtle" 
+                            leftSection={<IconTrash size={16} />}
+                            onClick={() => onDelete(index, currentRecord.id)}
+                            fz="xs"
+                        >
+                        Remove Level
+                        </Button>
+                    </Group>
+                </Grid.Col>
+            </Grid>
+        </Paper>
     );
 };
 

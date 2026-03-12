@@ -18,7 +18,9 @@ import {
   Image,
   Button,
   Badge,
-  LoadingOverlay
+  LoadingOverlay,
+  Alert,
+  List
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { IconUser, IconSignature, IconAlertCircle, IconAlertTriangle, IconArrowBarToUp, IconSettings2, IconDeviceFloppy, IconPlus } from '@tabler/icons-react';
@@ -244,47 +246,60 @@ const EducationalBackgroundPage = () => {
                         Educational Background
                     </Title>
                     <Text fz="xs" fw={500} mb="lg" c="dimmed">Manage your educational background for student profiling.</Text>
+                    <Alert 
+                        icon={<IconAlertCircle size={16} />} 
+                        title="Instructions:" 
+                        color="gray" 
+                        variant="light" 
+                        mb="md"
+                        radius="lg"
+                        py="lg"
+                    >
+                        <List size="xs" c="dimmed" spacing={5} mt={2}>
+                            <List.Item>All fields marked with an asterisk (*) are required.</List.Item>
+                            <List.Item>You may add additional entry fields corresponding to the year level as deemed necessary.</List.Item>
+                            <List.Item>Search and select your school name from the dropdown.</List.Item>
+                            <List.Item>Click "Save Changes" to submit your changes.</List.Item>
+                        </List>
+                    </Alert>
                     {/* Educational Background Fields */}
                     <Grid>
                         <Grid.Col span={12}>
-                            <Paper withBorder radius="lg" p="lg">
-                                <Text fz="md" fw={600} mb="md">Previously Attended Schools</Text>
-                                <Stack gap="lg">
-                                   {form.values.records?.map((record, index) => (
-                                        <EducationalBackgroundForm
-                                            key={record.id || `new-${index}`} 
-                                            index={index}
-                                            form={form} 
-                                            academicLevels={academicLevels}
-                                            onDelete={handleRemoveRecord}
-                                        />
-                                    ))}
+                            <Text fz="md" fw={600} mb="md">Previously Attended Schools</Text>
+                            <Stack gap="lg">
+                                {form.values.records?.map((record, index) => (
+                                    <EducationalBackgroundForm
+                                        key={record.id || `new-${index}`} 
+                                        index={index}
+                                        form={form} 
+                                        academicLevels={academicLevels}
+                                        onDelete={handleRemoveRecord}
+                                    />
+                                ))}
 
-                                    {/* Buttons to Add More or Save */}
-                                    <Group justify="right" mt="md">
-                                    <Button 
-                                        variant="light" 
-                                        color="gray"
-                                        fz="xs"
-                                        onClick={handleAddRecord} 
-                                    >
-                                        Add Another Level
-                                    </Button>
+                                {/* Buttons to Add More or Save */}
+                                <Group justify="right" mt="md" mb="xl">
+                                <Button 
+                                    variant="light" 
+                                    color="gray"
+                                    fz="xs"
+                                    onClick={handleAddRecord} 
+                                >
+                                    Add Another Level
+                                </Button>
 
-                                    <Button 
-                                        color="teal" 
-                                        fz="xs"
-                                        onClick={handleSaveAll} 
-                                        loading={isSubmitting}
-                                    >
-                                        Save Changes
-                                    </Button>
-                                    </Group>
-                                </Stack>
-                            </Paper>
+                                <Button 
+                                    color="teal" 
+                                    fz="xs"
+                                    onClick={handleSaveAll} 
+                                    loading={isSubmitting}
+                                >
+                                    Save Changes
+                                </Button>
+                                </Group>
+                            </Stack>
                         </Grid.Col>
                     </Grid>
-        
                 </Grid.Col>
             </Grid>
         </>
