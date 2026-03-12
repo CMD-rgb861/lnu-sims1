@@ -39,7 +39,7 @@ export const SidebarFooterComponent = () => {
         dispatch(logoutUser());
     };
     
-    const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
+    const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''} ${user.ext_name ?? ''}`.trim();
 
     const dicebearUrl = getDiceBearAvatar(fullName, 'initials');
 
@@ -69,7 +69,7 @@ export const SidebarFooterComponent = () => {
 
                     <Box sx={{ flex: 1 }} w={150}>
                         <Text className="profile-name" size="xs" fw={700} fz="xs" truncate="end">
-                        {fullName || 'User'}
+                            {fullName || 'User'}
                         </Text>
                         <Text c="dimmed" size="xs" fw={500}>
                         {user.id_number || '--'}

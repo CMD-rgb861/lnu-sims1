@@ -223,11 +223,13 @@ const EducationalBackgroundPage = () => {
                 
                 <Grid>
                     <Grid.Col span={12}>
-                        <Paper withBorder radius="lg" p="lg">
-                            {Array.from({ length: 12 }).map((_, index) => (
-                                <Skeleton key={index} height={40} mb="md" radius="md" />
-                            ))}
-                        </Paper>
+                        {Array.from({ length: 3 }).map((_, index) => (
+                            <Paper withBorder radius="lg" p="lg" mb="lg">
+                                {Array.from({ length: 3 }).map((_, index) => (
+                                    <Skeleton key={index} height={40} mb="md" radius="md" />
+                                ))}
+                            </Paper>
+                        ))}
                     </Grid.Col>
                 </Grid>
                 </Grid.Col>

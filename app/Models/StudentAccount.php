@@ -13,6 +13,7 @@ class StudentAccount extends Authenticatable
         'first_name',
         'middle_name',
         'last_name',
+        'ext_name',
         'email_address',
         'password',
         'temp_password',
@@ -33,11 +34,12 @@ class StudentAccount extends Authenticatable
 
     public function getDisplayNameAttribute()
     {
-        if($this->middle_name){
-            return "{$this->first_name} {$this->middle_name} {$this->last_name}";
-        }else{
-            return "{$this->first_name} {$this->last_name}";
-        }
+        return collect([
+            $this->first_name,
+            $this->middle_name,
+            $this->last_name,
+            $this->ext_name
+        ])->filter()->implode(' ');
     }
 
     public function student_profile()

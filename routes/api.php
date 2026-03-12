@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CollegeController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EducBackgroundController;
+use App\Http\Controllers\FamBackgroundController;
 use App\Http\Controllers\NationalityController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\PSGCController;
@@ -102,6 +103,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('/mp/')->name('my_profile.')->group(function() {
         Route::get('/fetch/student-details/{id}', [StudentAccountController::class, 'fetchStudentAccountDetails'])->name('fetchStudentAccountDetails');
         Route::get('/fetch/educ-background/{id}', [EducBackgroundController::class, 'fetchEducationalBackground'])->name('fetchEducationalBackground');
+         Route::get('/fetch/family-background/{id}', [FamBackgroundController::class, 'fetchFamilyBackground'])->name('fetchFamilyBackground');
         Route::get('/fetch/educ-schools/search', [EducBackgroundController::class, 'fetchSchools'])->name('fetchSchools');
         Route::post('/upload-pictures', [StudentAccountController::class, 'uploadStudentPictures'])->name('uploadStudentPictures');
         Route::put('/update-personal-info', [StudentAccountController::class, 'updateStudentProfileInfo'])->name('updateStudentProfileInfo');

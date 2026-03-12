@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useNavigate } from 'react-router-dom';
 import {
@@ -17,18 +17,20 @@ import {
   Switch,
   Image,
   Button,
-  Badge
+  Badge,
+  LoadingOverlay,
+  Alert,
+  List
 } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
-import { IconUser, IconSignature, IconAlertCircle, IconAlertTriangle, IconArrowBarToUp, IconSettings2 } from '@tabler/icons-react';
+import { useForm } from '@mantine/form';
+import { IconUser, IconSignature, IconAlertCircle, IconAlertTriangle, IconArrowBarToUp, IconSettings2, IconDeviceFloppy, IconPlus } from '@tabler/icons-react';
 
 import axiosClient from '../../../api/axiosClient';
 import { getDiceBearAvatar } from '../../../plugins/dicebear'; 
 import { useAuth } from '../../../hooks/useAuth';
-import PersonalInformationForm from '../../../components/Forms/StudentAccount/PersonalInformationForm';
-import ChangeProfilePictureModal from '../../../components/Modals/StudentAccount/ChangeProfilePictureModal';
-import ChangeAccountPasswordModal from '../../../components/Modals/StudentAccount/ChangeAccountPasswordModal';
 
+import EducationalBackgroundForm from '../../../components/Forms/StudentAccount/EducationalBackgroundForm';
+import FamilyBackgroundForm from '../../../components/Forms/StudentAccount/FamilyBackgroundForm';
 
 const FamilyBackgroundPage = () => {
     // Breadcrumbs items
@@ -52,168 +54,190 @@ const FamilyBackgroundPage = () => {
     const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
     const dicebearUrl = getDiceBearAvatar(fullName, 'initials');
 
-    const [studentDetails, setStudentDetails] = useState(null); 
-    const [studentProfilePic, setStudentProfilePic] = useState(null); 
-    const [studentSignature, setStudentSignature] = useState(null); 
-    const [dropdownData, setDropdownData] = useState({
-        nationalities: [],
-        regions: [],
-        provinces: [],
-        municipalities: [],
-        barangays: []
-    });
+    const [familyRecords, setFamilyRecords] = useState([]);
+    const [familyRelations, setFamilyRelations] = useState([]);
+    const form = useForm({
+        initialValues: {
+            records: [
+                { 
+                    id: null, 
+                    relation_id: '', 
+                    is_guardian: false, 
+                    first_name: '', 
+                    middle_name: '', 
+                    last_name: '', 
+                    ext_name: '',
+                    birthday: '',
+                    contact_number: '',
+                    email_address: '',
+                    occupation: '',
+                    employer: '',
+                    employer_address: '',
+                    employer_contact: ''
+                }
+            ],
+        },
 
+        validate: {
+            records: {
+                relation_id: (value) => (!value ? 'Relationship is required' : null),
+                first_name: (value) => (!value ? 'School name is required' : null),
+                last_name: (value) => (!value ? 'Start year is required' : null),
+            }
+        }
+    });
+    
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showSignature, setShowSignature] = useState(false);
-
-    const [pictureModalOpened, { open: openPictureModal, close: closePictureModal }] = useDisclosure(false);
-    const [passwordModalOpened, { open: openPasswordModal, close: closePasswordModal }] = useDisclosure(false);
-
-    const STORAGE_URL = import.meta.env.VITE_API_BASE_URL 
-        ? `${import.meta.env.VITE_API_BASE_URL}/storage/` 
-        : 'http://localhost:8000/storage/';
 
     const refetchData = async () => {
         try {
-            const [studentDetailsReponse, nationalitiesResponse] = await Promise.all([
-            axiosClient.get(`api/mp/fetch/student-details/${user.id}`),
+            const targetId = user.id; 
+            const [familyBackgroundResponse] = await Promise.all([
+                axiosClient.get(`/api/mp/fetch/family-background/${targetId}`), 
             ]);
-            setStudentDetails(studentDetailsReponse.data);
-            setStudentProfilePic(studentDetailsReponse.data.studentProfile.profile_pic);
-            setStudentSignature(studentDetailsReponse.data.studentProfile.e_signature);
-            setDropdownData({
-            nationalities: studentDetailsReponse.data.nationalities || [],
-            regions: studentDetailsReponse.data.regions || [],
-            provinces: studentDetailsReponse.data.provinces || [],
-            municipalities: studentDetailsReponse.data.municipalities || [],
-            barangays: studentDetailsReponse.data.barangays || []
-            });
+
+            const fetchedRecords = familyBackgroundResponse.data.records;
+
+            if (fetchedRecords.length > 0) {
+                const formattedRecords = fetchedRecords.map(record => ({
+                    ...record,
+                    relation_id: record.relation_id ? String(record.relation_id) : '',
+                }));
+                form.setValues({ records: formattedRecords });
+            } else {
+                form.setValues({ records: [{
+                    id: null, relation_id: '', first_name: 'N/A', middle_name: '',
+                    last_name: 'N/A', ext_name: 'N/A', birthday: '', contact_number: '', 
+                    email_address: 'N/A', occupation: 'N/A', employer: 'N/A', employer_address: 'N/A',
+                    employer_contact: 'N/A', is_guardian: 0
+                }]});
+            }
+            setFamilyRelations(familyBackgroundResponse.data.relations);
         } catch (error) {
-        console.error("Failed to refetch data:", error);
+            console.error("Failed to refetch data:", error);
         }
     };
 
     useEffect(() => {
-        const fetchData = async () => {
-        setLoading(true);
-        try {
-            const [studentDetailsReponse] = await Promise.all([
-            axiosClient.get(`api/mp/fetch/student-details/${user.id}`),
-            ]);
-            setStudentDetails(studentDetailsReponse.data);
-            setStudentProfilePic(studentDetailsReponse.data.studentProfile.profile_pic);
-            setStudentSignature(studentDetailsReponse.data.studentProfile.e_signature);
-            setDropdownData({
-            nationalities: studentDetailsReponse.data.nationalities || [],
-            regions: studentDetailsReponse.data.regions || [],
-            provinces: studentDetailsReponse.data.provinces || [],
-            municipalities: studentDetailsReponse.data.municipalities || [],
-            barangays: studentDetailsReponse.data.barangays || []
-            });
-        } catch (error) {
-            console.error("Failed to refetch data:", error);
-        } finally {
-            setLoading(false);
-        }
-        };
-        fetchData();
-    }, []);
+        const fetchEducationalData = async () => {
+            try {
+            const targetId = user.id; 
+                const [familyBackgroundResponse] = await Promise.all([
+                    axiosClient.get(`/api/mp/fetch/family-background/${targetId}`), 
+                ]);
 
-    const handleUpdatePersonalInfo = async (values) => {
-        setIsSubmitting(true);
-        setLoading(true);
-        try {
-        const payload = { 
-            ...values
+                const fetchedRecords = familyBackgroundResponse.data.records;
+
+                if (fetchedRecords.length > 0) {
+                    const formattedRecords = fetchedRecords.map(record => ({
+                        ...record,
+                        relation_id: record.relation_id ? String(record.relation_id) : '',
+                    }));
+                    form.setValues({ records: formattedRecords });
+                } else {
+                    form.setValues({ records: [{
+                        id: null, relation_id: '', first_name: 'N/A', middle_name: '',
+                        last_name: 'N/A', ext_name: 'N/A', birthday: '', contact_number: '', 
+                        email_address: 'N/A', occupation: 'N/A', employer: 'N/A', employer_address: 'N/A',
+                        employer_contact: 'N/A', is_guardian: 0
+                    }]});
+                }
+                setFamilyRelations(familyBackgroundResponse.data.relations);
+            } catch (error) {
+                console.error("Error fetching family background:", error);
+            } finally {
+                setLoading(false);
+            }
         };
-        await axiosClient.put(`api/mp/update-personal-info`, payload);
-        await refetchData();
-        } catch (error) {
-        //
-        } finally {
-        setIsSubmitting(false);
-        setLoading(false);
+
+        if (user.id) {
+            fetchEducationalData();
         }
+    }, [user.id]);
+
+
+    const handleRecordChange = (index, field, value) => {
+        const updatedRecords = [...educationRecords];
+        updatedRecords[index][field] = value;
+        setFamilyRecords(updatedRecords);
     };
 
-    // Handle uploading of profile picture and e-signature
-    const handlePictureUpload = async (files) => {
+    const handleAddRecord = () => {
+        form.insertListItem('records', {
+            id: null, relation_id: '', first_name: 'N/A', middle_name: '',
+            last_name: 'N/A', ext_name: 'N/A', birthday: '', contact_number: '', 
+            email_address: 'N/A', occupation: 'N/A', employer: 'N/A', employer_address: 'N/A',
+            employer_contact: 'N/A', is_guardian: 0
+        });
+       
+    };
+
+    const handleRemoveRecord = async (index, recordId) => {
+        if (recordId) {
+            try {
+                setLoading(true);
+                await axiosClient.delete(`/api/mp/delete-family-background/${recordId}`);
+            } catch (error) {
+                console.error("Failed to delete record", error);
+                setLoading(false);
+                return; 
+            }
+        }
+
+        form.removeListItem('records', index);
+        setLoading(false);
+    };
+
+    const handleSaveAll = async () => {
+        const validation = form.validate();
+
+        if (validation.hasErrors) {
+            return; 
+        }
+
         setIsSubmitting(true);
+        const id = user.id
+
         try {
-            const formData = new FormData();
-
-            formData.append('id', user.id);
-            
-            if (files.profile_pic) {
-            formData.append('profile_pic', files.profile_pic);
-            }
-            if (files.e_signature) {
-            formData.append('e_signature', files.e_signature);
-            }
-
-            await axiosClient.post(`api/mp/upload-pictures`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
+            await axiosClient.put(`/api/mp/update-family-background/${id}`, {
+                records: form.values.records
             });
-
-            await refetchData(); 
-            closePictureModal(); 
+            setLoading(true);
         } catch (error) {
-            console.error("Upload failed", error);
+            console.error("Failed to save records", error);
         } finally {
             setIsSubmitting(false);
-        }
-    };
-
-    // Handle update of account password
-    const handlePasswordSubmit = async (passwordData) => {
-        setIsSubmitting(true);
-        try {
-        // passwordData contains: current_password, new_password, new_password_confirmation
-        const response = await axiosClient.put('/api/mp/change-password', {
-            id: studentId,
-            ...passwordData
-        });
-        
-        console.log('Password updated successfully');
-        setOpened(false); // Close modal on success
-        
-        // Show success toast/notification here
-
-        } catch (error) {
-        console.error('Failed to update password', error.response?.data);
-        // Show error toast/notification here based on Laravel validation errors
-        } finally {
-        setIsSubmitting(false);
+            setLoading(false);
         }
     };
 
     if (loading) {
         return (
-        <Grid>
-            <Grid.Col span={12}>
-            <Breadcrumbs separator=">" mb="md" fw={400} fz="xs">
-                {items}
-            </Breadcrumbs>
-            <Divider mb="lg" />
-            <Title align="left" order={2} mb={4} fw={600} fz={20}>
-                Family Background
-            </Title>
-            <Text fz="xs" fw={500} mb="lg" c="dimmed">Manage your family background for student profiling.</Text>
-            
             <Grid>
                 <Grid.Col span={12}>
-                    <Paper withBorder radius="lg" p="lg">
-                        {Array.from({ length: 12 }).map((_, index) => (
-                        <Skeleton key={index} height={40} mb="md" radius="md" />
+                <Breadcrumbs separator=">" mb="md" fw={400} fz="xs">
+                    {items}
+                </Breadcrumbs>
+                <Divider mb="lg" />
+                <Title align="left" order={2} mb={4} fw={600} fz={20}>
+                    Family Background
+                </Title>
+                <Text fz="xs" fw={500} mb="lg" c="dimmed">Manage your family background for student profiling.</Text>
+                
+                <Grid>
+                    <Grid.Col span={12}>
+                        {Array.from({ length: 3 }).map((_, index) => (
+                            <Paper withBorder radius="lg" p="lg" mb="lg">
+                                {Array.from({ length: 3 }).map((_, index) => (
+                                    <Skeleton key={index} height={40} mb="md" radius="md" />
+                                ))}
+                            </Paper>
                         ))}
-                    </Paper>
+                    </Grid.Col>
+                </Grid>
                 </Grid.Col>
             </Grid>
-            </Grid.Col>
-        </Grid>
         );
     }
 
@@ -223,20 +247,65 @@ const FamilyBackgroundPage = () => {
                 <Grid.Col span={12}>
                     <Breadcrumbs separator=">" mb="md" fw={400}>{items}</Breadcrumbs>
                     <Divider mb="lg" />
+                    <LoadingOverlay visible={loading} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
                     <Title align="left" order={2} mb={4} fw={600} fz={20}>
-                    Family Background
+                        Family Background
                     </Title>
                     <Text fz="xs" fw={500} mb="lg" c="dimmed">Manage your family background for student profiling.</Text>
-
+                    <Alert 
+                        icon={<IconAlertCircle size={16} />} 
+                        title="Instructions:" 
+                        color="gray" 
+                        variant="light" 
+                        mb="md"
+                        radius="lg"
+                        py="lg"
+                    >
+                        <List size="xs" c="dimmed" spacing={5} mt={2}>
+                            <List.Item>All fields marked with an asterisk (*) are required.</List.Item>
+                            <List.Item>You may add additional entry fields corresponding to the year level as deemed necessary.</List.Item>
+                            <List.Item>Search and select your school name from the dropdown.</List.Item>
+                            <List.Item>Click "Save Changes" to submit your changes.</List.Item>
+                        </List>
+                    </Alert>
                     {/* Educational Background Fields */}
                     <Grid>
                         <Grid.Col span={12}>
-                            <Paper withBorder radius="lg" p="lg">
-                                <Text fz="md" fw={600}>Immediate Family Members</Text>
-                            </Paper>
+                            <Text fz="md" fw={600} mb="md">Immediate Family Members</Text>
+                            <Stack gap="lg">
+                                {form.values.records?.map((record, index) => (
+                                    <FamilyBackgroundForm
+                                        key={record.id || `new-${index}`} 
+                                        index={index}
+                                        form={form} 
+                                        famRelations={familyRelations}
+                                        onDelete={handleRemoveRecord}
+                                    />
+                                ))}
+
+                                {/* Buttons to Add More or Save */}
+                                <Group justify="right" mt="md" mb="xl">
+                                <Button 
+                                    variant="light" 
+                                    color="gray"
+                                    fz="xs"
+                                    onClick={handleAddRecord} 
+                                >
+                                    Add Another Member
+                                </Button>
+
+                                <Button 
+                                    color="teal" 
+                                    fz="xs"
+                                    onClick={handleSaveAll} 
+                                    loading={isSubmitting}
+                                >
+                                    Save Changes
+                                </Button>
+                                </Group>
+                            </Stack>
                         </Grid.Col>
                     </Grid>
-        
                 </Grid.Col>
             </Grid>
         </>

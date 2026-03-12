@@ -38,6 +38,7 @@ const PersonalInformationForm = ({
       first_name: '',
       middle_name: '',
       last_name: '',
+      ext_name: '',
       birthday: '',
       gender: '',
       civil_status: '',
@@ -68,6 +69,7 @@ const PersonalInformationForm = ({
         first_name: userDetails.studentAccount?.first_name || '',
         middle_name: userDetails.studentAccount?.middle_name || '',
         last_name: userDetails.studentAccount?.last_name || '',
+        ext_name: userDetails.studentAccount?.ext_name || '',
         
         // From studentProfile
         birthday: userDetails.studentProfile?.birthday || '',
@@ -146,7 +148,15 @@ const PersonalInformationForm = ({
                                 placeholder="Last Name"
                                 {...form.getInputProps('last_name')}
                                 />
+                            </Grid.Col> 
+                            <Grid.Col span={{ base: 12, sm: 4 }}>
+                                <TextInput
+                                label="Extension Name"
+                                placeholder="e.g. Jr."
+                                {...form.getInputProps('ext_name')}
+                                />
                             </Grid.Col>
+
 
                             <Grid.Col span={{ base: 12, sm: 4 }}>
                                 <TextInput

@@ -121,6 +121,7 @@ class StudentAccountController extends Controller
             'first_name'=> 'required|string|max:255',
             'middle_name'=> 'max:255',
             'last_name'=> 'required|string|max:255',
+            'ext_name'=> 'string|max:5',
             'email_address'=> 'required|max:255',
             'birthday'=> 'required',
             'gender'=> 'required',
@@ -155,6 +156,7 @@ class StudentAccountController extends Controller
             $studentAccount->first_name = $request->first_name;
             $studentAccount->middle_name = $request->middle_name;
             $studentAccount->last_name = $request->last_name;
+            $studentAccount->ext_name = $request->ext_name;
             $studentAccount->save();
 
             // Create or update student profile

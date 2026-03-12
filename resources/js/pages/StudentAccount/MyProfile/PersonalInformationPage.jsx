@@ -294,7 +294,7 @@ const PersonalInformationPage = () => {
 
                                     <Box ta="center" mt="sm" mb="sm">
                                         <Text fw={700} fz="xl">
-                                            {user?.first_name} {user?.middle_name} {user?.last_name}
+                                            {user?.first_name} {user?.middle_name} {user?.last_name} {user?.ext_name}
                                         </Text>
                                         <Text c="dimmed" fz="sm" mt={4}>
                                             {user?.email_address}

@@ -1,11 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Grid, Select, TextInput, NumberInput, Button, Paper, Group, Autocomplete, Divider } from '@mantine/core';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Grid, Select, TextInput, NumberInput, Button, Paper, Group, Autocomplete } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 
 import axiosClient from '../../../api/axiosClient';
 
 const EducationalBackgroundForm = ({ form, index, academicLevels, onChange, onDelete }) => {
+
+    const isFirstRender = useRef(true);
 
     const currentRecord = form.values.records[index] || {};
 
@@ -16,6 +18,11 @@ const EducationalBackgroundForm = ({ form, index, academicLevels, onChange, onDe
     const [schoolOptions, setSchoolOptions] = useState([]);
 
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
         if (debouncedSearch.length >= 2) {
             axiosClient.get(`/api/mp/fetch/educ-schools/search?term=${debouncedSearch}`)
             .then(response => {
