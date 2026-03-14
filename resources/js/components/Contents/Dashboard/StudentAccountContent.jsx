@@ -6,16 +6,16 @@ import {
   Box
 } from '@mantine/core';
 
-const AdminContent = () => {
+const StudentAccountContent = () => {
   return (
     <>
         <Grid>
           <Grid.Col span={12} py="xl" mah={700} style={{overflow: "auto"}}>
-            <Text fz="sm" fw={500} lts={0.1} c="dimmed" mt="md">Admin Account Dashboard </Text>
+            <Text fz="sm" fw={500} lts={0.1} c="dimmed" mt="md">Student Account Dashboard </Text>
           </Grid.Col>
         </Grid>
     </>
   );
 };
 
-export default AdminContent;
+export default StudentAccountContent;

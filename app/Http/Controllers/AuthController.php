@@ -228,11 +228,13 @@ class AuthController extends Controller
         }
 
         if ($user instanceof StudentAccount) {
+            $hasProfile = $user->student_profile()->exists();
+            $user->has_profile = $hasProfile;
             return response()->json([
                 'user' => $user,
                 'user_type' => 'Student',
                 'user_role_level' => [],
-                'profile_pic' => $user->student_profile->profile_pic
+                'profile_pic' => $user->student_profile?->profile_pic 
             ]);
         }
 

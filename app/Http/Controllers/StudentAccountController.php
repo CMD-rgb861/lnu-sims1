@@ -49,7 +49,7 @@ class StudentAccountController extends Controller
     private function getStudentProfileData($id)
     {
         $studentAccount = StudentAccount::findOrFail($id);
-        $studentProfile = StudentProfile::where('student_account_id', $id)->first();
+        $studentProfile = StudentProfile::firstOrNew(['student_account_id' => $id]);
         $educBackgrounds = EducBackground::where('student_account_id', $id)->get();
         $famBackgrounds = FamBackground::where('student_account_id', $id)->get();
 
@@ -65,7 +65,7 @@ class StudentAccountController extends Controller
             ->first();
 
         $activeSchoolYear = SchoolYear::where('is_active', 1)->first();
-        $activeSchoolYearId = $activeSchoolYear->id;
+        $activeSchoolYearId = $activeSchoolYear?->id;
 
         $previousEnrollments = EnrollmentDetail::where('student_account_id', $id)
                                               ->where('school_year_id', '!=', $activeSchoolYearId)

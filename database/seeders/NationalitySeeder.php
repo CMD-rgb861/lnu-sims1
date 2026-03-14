@@ -206,6 +206,6 @@ class NationalitySeeder extends Seeder
             ['nationality' => 'Zimbabwean'],
         ];
 
-        DB::table('nationalities')->insert($nationalities);
+        DB::table('nationalities')->insertOrIgnore($nationalities);
     }
 }
