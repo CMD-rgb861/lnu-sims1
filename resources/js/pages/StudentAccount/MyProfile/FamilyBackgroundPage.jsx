@@ -261,11 +261,9 @@ const FamilyBackgroundPage = () => {
                         radius="lg"
                         py="lg"
                     >
-                        <List size="xs" c="dimmed" spacing={5} mt={2}>
+                        <List size="xs" c="black" spacing={5} mt={2}>
                             <List.Item>All fields marked with an asterisk (*) are required.</List.Item>
-                            <List.Item>You may add additional entry fields corresponding to the year level as deemed necessary.</List.Item>
-                            <List.Item>Search and select your school name from the dropdown.</List.Item>
-                            <List.Item>Click "Save Changes" to submit your changes.</List.Item>
+                            <List.Item>Click "Save Changes" to finalize your changes.</List.Item>
                         </List>
                     </Alert>
                     {/* Educational Background Fields */}

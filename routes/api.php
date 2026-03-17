@@ -30,10 +30,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //PSGC ROUTES
     Route::prefix('/psgc/')->name('psgc.')->group(function() {
-        Route::get('/regions', [PSGCController::class, 'fetchRegions'])->name('regions');
-        Route::get('/provinces/{regionId}', [PSGCController::class, 'fetchProvinces'])->name('provinces');
-        Route::get('/municipalities/{provinceId}', [PSGCController::class, 'fetchMunicipalities'])->name('municipalities');
-        Route::get('/barangays/{municipalityId}', [PSGCController::class, 'fetchBarangays'])->name('barangays');
+        Route::get('/regions', [PSGCController::class, 'fetchRegions'])->name('fetchRegions');
+        Route::get('/provinces/{regionId}', [PSGCController::class, 'fetchProvinces'])->name('fetchProvinces');
+        Route::get('/municipalities/{provinceId}', [PSGCController::class, 'fetchMunicipalities'])->name('fetchMunicipalities');
+        Route::get('/barangays/{municipalityId}', [PSGCController::class, 'fetchBarangays'])->name('fetchBarangays');
     });
 
     //USER ROLES ROUTES
@@ -103,9 +103,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('/mp/')->name('my_profile.')->group(function() {
         Route::get('/fetch/student-details/{id}', [StudentAccountController::class, 'fetchStudentAccountDetails'])->name('fetchStudentAccountDetails');
         Route::get('/fetch/educ-background/{id}', [EducBackgroundController::class, 'fetchEducationalBackground'])->name('fetchEducationalBackground');
-         Route::get('/fetch/family-background/{id}', [FamBackgroundController::class, 'fetchFamilyBackground'])->name('fetchFamilyBackground');
+        Route::get('/fetch/educ-background/levels', [EducBackgroundController::class, 'fetchAcademicLevels'])->name('fetchAcademicLevels');
         Route::get('/fetch/educ-schools/search', [EducBackgroundController::class, 'fetchSchools'])->name('fetchSchools');
+        Route::get('/fetch/family-background/relations', [FamBackgroundController::class, 'fetchFamRelations'])->name('fetchFamRelations');
+        Route::get('/fetch/family-background/{id}', [FamBackgroundController::class, 'fetchFamilyBackground'])->name('fetchFamilyBackground');
         Route::post('/upload-pictures', [StudentAccountController::class, 'uploadStudentPictures'])->name('uploadStudentPictures');
+        Route::post('/create-profile', [StudentAccountController::class, 'createStudentProfile'])->name('createStudentProfile');
         Route::put('/update-personal-info', [StudentAccountController::class, 'updateStudentProfileInfo'])->name('updateStudentProfileInfo');
         Route::put('/update-educ-background/{id}', [EducBackgroundController::class, 'createEducationalBackground'])->name('createEducationalBackground');
         Route::delete('/delete-educ-background/{id}', [EducBackgroundController::class, 'deleteEducationalBackground'])->name('deleteEducationalBackground');

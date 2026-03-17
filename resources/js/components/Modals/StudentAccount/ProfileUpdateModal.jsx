@@ -22,27 +22,85 @@ import ProfileUpdatePage1Form from '../../Forms/StudentAccount/ProfileUpdatePage
 import ProfileUpdatePage2Form from '../../Forms/StudentAccount/ProfileUpdatePage2Form';
 import ProfileUpdatePage3Form from '../../Forms/StudentAccount/ProfileUpdatePage3Form';
 
-const ProfileUpdateModal = ({ user, opened }) => {
+const ProfileUpdateModal = ({ user, opened, onClose }) => {
     const dispatch = useDispatch();
 
     // --- FORM STATE INITIALIZATION ---
     const form = useForm({
         initialValues: {
-            first_name: user?.first_name || '',
+            id: user?.id || '',
+            id_number: user?.id_number || '',
             last_name: user?.last_name || '',
+            first_name: user?.first_name || '',
+            middle_name: user?.middle_name || '',
+            last_name: user?.last_name || '',
+            email_address: user?.email_address || '',
             blood_type: '',
-            records: [
-                { level_id: '', school_id: '', period_from: '', period_to: '', year_graduated: '', honors: '', degree: '', units_earned: '' }
+            educ_background: [
+                { level_id: '', school_id: '', period_from: '', period_to: '', year_graduated: '', honors: '', degree: '', units_earned: 0 }
             ],
-            family_members: [
+            fam_background: [
                 { name: '', relationship: '', occupation: '', contact_number: '' }
-            ]
+            ],
+            region: '',
+            province: '',
+            city: '',
+            barangay: '',
+        },
+        validate: {
+            id_number: (value) => (value?.length >= 7 ? null : 'ID Number must be at least 7 characters'),
+            first_name: (value) => (value?.trim().length > 0 ? null : 'First name is required'),
+            last_name: (value) => (value?.trim().length > 0 ? null : 'Last name is required'),
+            email_address: (value) => (value?.trim().length > 0 ? null : 'Email address is required'),
+            contact_number: (value) => {
+                if (!value || value.trim().length === 0) return 'Contact number is required';
+                if (value.trim().length !== 11) return 'Must be exactly 11 digits';
+                if (!/^\d+$/.test(value)) return 'Must contain only numbers'; 
+                return null; 
+            },
+            profile_picture: (value) => (value ? null : 'Profile picture is required'),
+            e_signature: (value) => (value ? null : 'E-signature is required'),
+            birthday: (value) => (value?.trim().length > 0 ? null : 'Birthday is required'),
+            gender: (value) => (value?.trim().length > 0 ? null : 'Gender is required'),
+            civil_status: (value) => (value?.trim().length > 0 ? null : 'Civil status is required'),
+            nationality: (value) => (value?.trim().length > 0 ? null : 'Nationality is required'),
+            blood_type: (value) => (value?.trim().length > 0 ? null : 'Blood type is required'),
+            address_region_id: (value) => (value?.trim().length > 0 ? null : 'Region is required'),
+            address_province_id: (value) => (value?.trim().length > 0 ? null : 'Province is required'),
+            address_municipality_id: (value) => (value?.trim().length > 0 ? null : 'Municipality is required'),
+            address_barangay_id: (value) => (value?.trim().length > 0 ? null : 'Barangay is required'),
+            educ_background: {
+                level_id: (value) => (value ? null : 'Level is required'),
+                school_id: (value) => (value ? null : 'School is required'),
+                period_from: (value) => (value ? null : 'Start year is required'),
+                period_to: (value) => (value ? null : 'End year is required'),
+                year_graduated: (value) => (value ? null : 'Year graduated is required'),
+            },
+            fam_background: {
+                relation_id: (value) => (value ? null : 'Relationship is required'),
+                first_name: (value) => (value?.trim().length > 0 ? null : 'First name required'),
+                last_name: (value) => (value?.trim().length > 0 ? null : 'Last name required'),
+                contact_number: (value) => {
+                    if (!value || value.trim().length === 0) return 'Contact number is required';
+                    if (value.trim().length !== 11) return 'Must be exactly 11 digits';
+                    if (!/^\d+$/.test(value)) return 'Must contain only numbers'; 
+                    return null; 
+                },
+            }
         }
     });
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // --- STEPPER & CONSENT STATE ---
     const [activeStep, setActiveStep] = useState(-1);
     const [consentChecked, setConsentChecked] = useState(false);
+
+    // --- PSGC STATE ---
+    const [regions, setRegions] = useState([]);
+    const [provinces, setProvinces] = useState([]);
+    const [municipalities, setMunicipalities] = useState([]);
+    const [barangays, setBarangays] = useState([]);
     
     // --- IMAGE STATE ---
     const [profilePic, setProfilePic] = useState(null);
@@ -62,40 +120,146 @@ const ProfileUpdateModal = ({ user, opened }) => {
 
     // --- AXIOS FETCH LOGIC ---
     const [academicLevels, setAcademicLevels] = useState([]);
+    const [familyRelations, setFamilyRelations] = useState([]);
+    const [nationalities, setNationalities] = useState([]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [educLevelsResponse, famRelationsResponse, nationalitiesResponse] = await Promise.all([
+                    axiosClient.get('/api/mp/fetch/educ-background/levels'),
+                    axiosClient.get('/api/mp/fetch/family-background/relations'),
+                    axiosClient.get('/api/nationalities')
+                ]);
+                const levels = educLevelsResponse.data?.levels || educLevelsResponse.data || [];
+                const relations = famRelationsResponse.data?.relations || famRelationsResponse.data || [];
+                const nationalities = nationalitiesResponse.data || [];
+
+                setAcademicLevels(Array.isArray(levels) ? levels : []);
+                setFamilyRelations(Array.isArray(relations) ? relations : []);
+                setNationalities(Array.isArray(nationalities) ? nationalities : []);
+            } catch (error) {
+                console.error("Failed to refetch data:", error);
+            }
+        };
+        fetchData();
+    }, [opened]);
 
     useEffect(() => {
         if (opened) {
-            axiosClient.get('/api/mp/fetch/academic-levels')
+            axiosClient.get('/api/psgc/regions') // UPDATE ROUTE
                 .then(res => {
-                    const levels = Array.isArray(res.data) ? res.data : (res.data?.data || []);
-                    setAcademicLevels(levels);
+                    const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+                    setRegions(data);
                 })
                 .catch(err => {
-                    console.error("Failed to load academic levels", err);
-                    setAcademicLevels([]); 
+                    console.error("Failed to load regions", err);
+                    setRegions([]);
                 });
         }
     }, [opened]);
 
+    useEffect(() => {
+        if (form.values.address_region_id) {
+            axiosClient.get(`/api/psgc/provinces/${form.values.address_region_id}`) // UPDATE ROUTE
+                .then(res => {
+                    const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+                    setProvinces(data);
+                })
+                .catch(err => {
+                    console.error("Failed to load provinces", err);
+                    setProvinces([]);
+                });
+        } else {
+            setProvinces([]);
+        }
+        // Optional but recommended: Reset child fields when the parent changes
+        form.setFieldValue('address_province_id', '');
+        form.setFieldValue('address_municipality_id', '');
+        form.setFieldValue('address_barangay_id', '');
+    }, [form.values.address_region_id]);
+
+    useEffect(() => {
+        if (form.values.address_province_id) {
+            axiosClient.get(`/api/psgc/municipalities/${form.values.address_province_id}`) // UPDATE ROUTE
+                .then(res => {
+                    const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+                    setMunicipalities(data);
+                })
+                .catch(err => {
+                    console.error("Failed to load cities", err);
+                    setMunicipalities([]);
+                });
+        } else {
+            setMunicipalities([]);
+        }
+        // Reset child fields
+        form.setFieldValue('address_municipality_id', '');
+        form.setFieldValue('address_barangay_id', '');
+    }, [form.values.address_province_id]);
+
+    useEffect(() => {
+        if (form.values.address_municipality_id) {
+            axiosClient.get(`/api/psgc/barangays/${form.values.address_municipality_id}`) 
+                .then(res => {
+                    const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+                    setBarangays(data);
+                })
+                .catch(err => {
+                    console.error("Failed to load barangays", err);
+                    setBarangays([]);
+                });
+        } else {
+            setBarangays([]);
+        }
+        form.setFieldValue('barangay', '');
+    }, [form.values.address_municipality_id]);
+
     // --- DYNAMIC FORM HANDLERS ---
     const addAcademicRecord = () => {
-        form.insertListItem('records', { level_id: '', school_id: '', period_from: '', period_to: '', year_graduated: '', honors: '', degree: '', units_earned: '' });
+        form.insertListItem('educ_background', { level_id: '', school_id: '', period_from: '', period_to: '', year_graduated: '', honors: '', degree: '', units_earned: '' });
     };
 
     const removeAcademicRecord = (index) => {
-        form.removeListItem('records', index);
+        form.removeListItem('educ_background', index);
     };
 
     const addFamilyMember = () => {
-        form.insertListItem('family_members', { name: '', relationship: '', occupation: '', contact_number: '' });
+        form.insertListItem('fam_background', { name: '', relationship: '', occupation: '', contact_number: '' });
     };
 
     const removeFamilyMember = (index) => {
-        form.removeListItem('family_members', index);
+        form.removeListItem('fam_background', index);
     };
 
     // --- STEPPER CONTROLS ---
-    const nextStep = () => setActiveStep((current) => (current < 2 ? current + 1 : current));
+    const nextStep = () => {
+        const validation = form.validate();
+        const stepFields = {
+            0: [ 
+                'id_number', 'first_name', 'last_name', 'email_address', 'birthday', 
+                'gender', 'civil_status', 'contact_number', 'nationality', 'blood_type', 
+                'address_region_id', 'address_province_id', 'address_municipality_id', 
+                'address_barangay_id', 'address_zip_code', 'address_street', 'profile_picture', 'e_signature'
+            ],
+            1: ['educ_background'], 
+            2: ['fam_background'], 
+        };
+
+        const currentStepFields = stepFields[activeStep] || [];
+
+        const hasErrorInCurrentStep = Object.keys(validation.errors).some((errorKey) => {
+            return currentStepFields.some(field => errorKey.startsWith(field));
+        });
+
+        if (!hasErrorInCurrentStep) {
+            form.clearErrors();
+            setActiveStep((current) => current + 1);
+        } else {
+            console.log("Please fix the errors in the current step.");
+        }
+    };
+
     const prevStep = () => setActiveStep((current) => (current > 0 ? current - 1 : current));
 
     const handleLogout = (e) => {
@@ -105,20 +269,41 @@ const ProfileUpdateModal = ({ user, opened }) => {
 
     // --- SUBMISSION LOGIC ---
     const handleSubmitProfile = async () => {
+        const validation = form.validate();
+        if (validation.hasErrors) {
+            setErrorMessage("Please check the form for errors before submitting.");
+            return; 
+        }
+
+        setIsSubmitting(true);
+        setErrorMessage(null); 
+
         try {
             const formData = new FormData();
+        
             formData.append('profile_data', JSON.stringify(form.values));
             if (profilePic) formData.append('profile_picture', profilePic);
             if (eSignature) formData.append('e_signature', eSignature);
-
-            await axiosClient.post('/api/student/profile/update', formData, {
+            const response = await axiosClient.post('/api/mp/create-profile', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            
-            console.log('Profile successfully updated!');
-            // TODO: Close modal, show notification, or refresh user data
+            onClose();
         } catch (error) {
-            console.error('Submission failed', error);
+            if (error.response && error.response.status === 422) {
+                const backendErrors = error.response.data.errors;
+                const formattedErrors = {};
+                Object.keys(backendErrors).forEach(key => {
+                    formattedErrors[key] = backendErrors[key][0]; 
+                });
+                form.setErrors(formattedErrors);
+                setErrorMessage("Some fields are invalid. Please check your inputs.");
+                
+            } else {
+                setErrorMessage(error.response?.data?.message || "An unexpected error occurred during submission.");
+            }
+        } finally {
+            onClose();
+            setIsSubmitting(false);
         }
     };
 
@@ -164,8 +349,10 @@ const ProfileUpdateModal = ({ user, opened }) => {
             
             if (croppingType === 'profile') {
                 setProfilePic(croppedFile);
+                form.setFieldValue('profile_picture', croppedFile);
             } else if (croppingType === 'signature') {
                 setSignature(croppedFile);
+                form.setFieldValue('e_signature', croppedFile);
             }
 
             setCroppingType(null);
@@ -202,13 +389,13 @@ const ProfileUpdateModal = ({ user, opened }) => {
             </Group>
             <Text>Greetings!</Text>
             <Text>
-                To ensure a smooth and efficient enrollment process, it is important that your student profile is complete and up to date. 
+                To ensure a smooth and efficient pre-enrollment process, it is important that your student profile is complete and up to date. 
                 Before getting started, please read the Data Privacy Consent Notice carefully. 
                 Your consent is required under the Data Privacy Act of 2012. Once acknowledged, 
                 you will be guided to update your personal, academic, and family background information.
             </Text>
 
-            <Alert icon={<IconInfoCircle size={16} />} title="Data Privacy Notice" color="blue" variant="light">
+            <Alert icon={<IconInfoCircle size={16} />} title="Data Privacy Notice" color="blue" variant="light" radius="lg">
                 In accordance with the <strong>Data Privacy Act of 2012</strong>,
                 the information you provide will be collected and processed solely for purposes of academic monitoring, student support, and institutional reporting. 
                 Your consent is required before we can collect and process your data.
@@ -243,7 +430,7 @@ const ProfileUpdateModal = ({ user, opened }) => {
         if (croppingType) {
             return (
                 <Stack spacing="md" mt="md" pos="relative" p="sm">
-                    <LoadingOverlay visible={isCroppingProcess} overlayBlur={2} />
+                    <LoadingOverlay visible={isCroppingProcess} overlayblur={2} />
                     <Box pos="relative" w="100%" h={400} bg="dark.7" style={{ borderRadius: '8px', overflow: 'hidden' }}>
                         <Cropper
                             image={tempImage}
@@ -260,9 +447,9 @@ const ProfileUpdateModal = ({ user, opened }) => {
                         <Text size="sm" weight={500}>Zoom</Text>
                         <Slider value={zoom} min={1} max={3} step={0.1} onChange={setZoom} color="blue" />
                     </Stack>
-                    <Group position="right" mt="md">
+                    <Group position="right" mt="md" justify="right">
                         <Button variant="light" color="gray" onClick={handleCancelCrop} size="xs">Cancel</Button>
-                        <Button color="blue" onClick={handleApplyCrop} size="xs" leftIcon={<IconCheck size={16} />}>Apply Crop</Button>
+                        <Button color="teal" onClick={handleApplyCrop} size="xs" leftSection={<IconCheck size={16} />}>Apply Crop</Button>
                     </Group>
                 </Stack>
             );
@@ -270,28 +457,29 @@ const ProfileUpdateModal = ({ user, opened }) => {
 
         return (
             <Stack spacing="md" p="sm">
-                <Alert icon={<IconInfoCircle size={16} />} color="gray">
+                <Alert icon={<IconInfoCircle size={16} />} color="gray" radius="lg">
                     <b>Instructions:</b>
-                    <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                        <li>On the <b>blood type section</b>, select "Unknown" if you are unsure.</li>
+                    <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px' }}>
+                        <li>Fields marked with (*) are required. </li>
                         <li>On the <b>e-signature section</b>, upload a picture of your signature with a white background and black ink.</li>
-                        <li>Put <b>N/A</b> if the field is not applicable.</li>
+                        <li>On the <b>blood type section</b>, select "Unknown" if you are unsure.</li>
+                        <li>Don't leave fields blank. Put <b>N/A</b> if the field is not applicable.</li>
                     </ul>
                 </Alert>
 
                 {errorMessage && (
-                    <Alert icon={<IconAlertCircle size={16} />} title="Upload Error" color="red" variant="light" withCloseButton onClose={() => setErrorMessage(null)}>
+                    <Alert icon={<IconAlertCircle size={16} />} title="Upload Error" color="red" variant="light" withCloseButton onClose={() => setErrorMessage(null)} gap="xs" radius="lg">
                         <Text fz="xs" c="red">{errorMessage}</Text>
                     </Alert>
                 )}
 
                 <Title order={4} mt="md">Upload Images</Title>
                 
-                <Grid gutter="xl">
+                <Grid gutter="xl" mb="sm">
                     {/* PROFILE PICTURE DROPZONE */}
                     <Grid.Col span={{ base: 12, xl: 6, lg: 6, md: 6, sm: 12 }}>
                         <Stack align="center" spacing="md">
-                            <Text fw={600} size="sm" c="dimmed">Profile Picture</Text>
+                            <Text fw={600} size="sm" c="dimmed">Profile Picture <Text c="red" span>*</Text></Text>
                             <Paper withBorder p="sm" radius="md" w="100%">
                                 <Stack align="center" spacing="sm">
                                     <Avatar src={profilePicPreview} size={120} radius={120} mx="auto" />
@@ -307,13 +495,20 @@ const ProfileUpdateModal = ({ user, opened }) => {
                                             maxFiles={1} 
                                             multiple={false} 
                                             p="sm" 
-                                            style={{ borderStyle: 'dashed', borderWidth: 1, borderColor: 'light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-3))', borderRadius: '10px' }}
+                                            style={{ 
+                                                borderStyle: 'dashed', 
+                                                borderWidth: 1, 
+                                                borderColor: form.errors.profile_picture ? 'var(--mantine-color-red-6)' : 'light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-3))',
+                                                backgroundColor: form.errors.profile_picture ? 'var(--mantine-color-red-0)' : undefined, 
+                                                borderRadius: '10px' 
+                                            }}
                                         >
-                                            <Group position="center" spacing="xs" style={{ pointerEvents: 'none' }}>
+                                            <Group justify="center" gap="xs" style={{ pointerEvents: 'none' }}>
                                                 <Dropzone.Accept><IconUpload size={20} color="var(--mantine-color-blue-6)" /></Dropzone.Accept>
                                                 <Dropzone.Reject><IconX size={20} color="var(--mantine-color-red-6)" /></Dropzone.Reject>
                                                 <Dropzone.Idle><IconPhoto size={40} color="light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))" /></Dropzone.Idle>
-                                                <Text size="xs" align="center" c="dimmed">Drag image or click (Max: 2MB)</Text>
+                                                <Text size="sm" fw={600} ta="center">Drag image here or click</Text>
+                                                <Text size="xs" c="light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3))" mt={2} ta="center">Max file size: 2MB</Text>
                                             </Group>
                                         </Dropzone>
                                     )}
@@ -325,7 +520,7 @@ const ProfileUpdateModal = ({ user, opened }) => {
                     {/* E-SIGNATURE DROPZONE */}
                     <Grid.Col span={{ base: 12, xl: 6, lg: 6, md: 6, sm: 12 }}>
                         <Stack align="center" spacing="md">
-                            <Text fw={600} size="sm" c="dimmed">E-Signature</Text>
+                            <Text fw={600} size="sm" c="dimmed">E-Signature <Text c="red" span>*</Text></Text>
                             <Paper withBorder p="sm" radius="md" w="100%">
                                 <Stack align="center" spacing="sm">
                                     <Image src={eSignaturePreview} alt="E-Signature Preview" height={120} width="100%" fit="contain" fallbackSrc="https://placehold.co/250x120?text=No+Signature" />
@@ -341,13 +536,20 @@ const ProfileUpdateModal = ({ user, opened }) => {
                                             maxFiles={1} 
                                             multiple={false} 
                                             p="sm" 
-                                            style={{ borderStyle: 'dashed', borderWidth: 1, borderColor: 'light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-3))', borderRadius: '10px' }}
+                                            style={{ 
+                                                borderStyle: 'dashed', 
+                                                borderWidth: 1, 
+                                                borderColor: form.errors.profile_picture ? 'var(--mantine-color-red-6)' : 'light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-3))',
+                                                backgroundColor: form.errors.profile_picture ? 'var(--mantine-color-red-0)' : undefined, 
+                                                borderRadius: '10px' 
+                                            }}
                                         >
-                                            <Group position="center" spacing="xs" style={{ pointerEvents: 'none' }}>
+                                            <Group justify="center" gap="xs" style={{ pointerEvents: 'none' }}>
                                                 <Dropzone.Accept><IconUpload size={20} color="var(--mantine-color-blue-6)" /></Dropzone.Accept>
                                                 <Dropzone.Reject><IconX size={20} color="var(--mantine-color-red-6)" /></Dropzone.Reject>
                                                 <Dropzone.Idle><IconPhoto size={40} color="light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))" /></Dropzone.Idle>
-                                                <Text size="xs" align="center" c="dimmed">Drag signature or click (Max: 2MB)</Text>
+                                                <Text size="sm" fw={600} ta="center">Drag image here or click</Text>
+                                                <Text size="xs" c="light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3))" mt={2} ta="center">Max file size: 2MB</Text>
                                             </Group>
                                         </Dropzone>
                                     )}
@@ -357,13 +559,19 @@ const ProfileUpdateModal = ({ user, opened }) => {
                     </Grid.Col>
                 </Grid>
 
-                <Divider my="sm" />
                 <Title order={4}>Personal Information</Title>
                 
-                <ProfileUpdatePage1Form form={form} />
+                <ProfileUpdatePage1Form 
+                    form={form}
+                    nationalities={nationalities}
+                    regions={regions}
+                    provinces={provinces}
+                    municipalities={municipalities}
+                    barangays={barangays} 
+                />
                 
                 <Group position="apart" mt="xl" justify="right">
-                    <Button variant="light" color="gray" onClick={handleLogout}>Logout</Button>
+                    <Button variant="subtle" color="gray" onClick={handleLogout}>Logout</Button>
                     <Button variant="light" rightSection={<IconArrowRight size={14}/>} onClick={nextStep}>Next</Button>
                 </Group>
             </Stack>
@@ -372,18 +580,19 @@ const ProfileUpdateModal = ({ user, opened }) => {
 
     const renderAcademicBackground = () => (
         <Stack spacing="md" p="sm">
-            <Alert icon={<IconInfoCircle size={16} />} color="gray">
+            <Alert icon={<IconInfoCircle size={16} />} color="gray" radius="lg">
                 <b>Instructions:</b>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px' }}>
                     <li>You are requested to provide information pertaining to all the schools that you previously attended.</li>
+                    <li>Fields marked with (*) are required. </li>
                     <li>Click the <b>Add Additional Level</b> button for each school attended relative to the year level selected.</li>
-                    <li>Put <b>N/A</b> if the field is not applicable.</li>
+                    <li>Do not leave fields blank. Put <b>N/A</b> if the field is not applicable.</li>
                 </ul>
             </Alert>
             <Title order={4} mt="md">Academic Background</Title>
             
             {/* Iterating dynamically across the records array */}
-            {form.values.records.map((_, index) => (
+            {form.values.educ_background.map((_, index) => (
                 <ProfileUpdatePage2Form 
                     key={index} 
                     index={index}
@@ -398,7 +607,7 @@ const ProfileUpdateModal = ({ user, opened }) => {
             </Button>
 
             <Group position="apart" mt="xl" justify="right">
-                <Button variant="light" leftSection={<IconArrowLeft size={14}/>} color="gray" onClick={prevStep}>Previous</Button>
+                <Button variant="subtle" leftSection={<IconArrowLeft size={14}/>} color="gray" onClick={prevStep}>Previous</Button>
                 <Button variant="light" rightSection={<IconArrowRight size={14}/>} onClick={nextStep}>Next</Button>
             </Group>
         </Stack>
@@ -406,22 +615,23 @@ const ProfileUpdateModal = ({ user, opened }) => {
 
     const renderFamilyBackground = () => (
         <Stack spacing="md" p="sm">
-            <Alert icon={<IconInfoCircle size={16} />} color="gray">
+            <Alert icon={<IconInfoCircle size={16} />} color="gray" radius="lg">
                 <b>Instructions:</b>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                    <li>You are requested to provide information pertaining to the family members you have on your household.</li>
+                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px' }}>
+                    <li>You are requested to provide information pertaining to the immediate family members in your household.</li>
+                    <li>Fields marked with (*) are required. </li>
                     <li>Click the <b>Add Additional Member</b> button for each family member.</li>
-                    <li>Put <b>N/A</b> if the field is not applicable.</li>
+                    <li>Do not leave fields blank. Put <b>N/A</b> if the field is not applicable.</li>
                 </ul>
             </Alert>
             <Title order={4} mt="md">Family Background</Title>
-            {form.values.family_members.map((_, index) => (
+            {form.values.fam_background.map((_, index) => (
                 <ProfileUpdatePage3Form 
                     key={index} 
                     index={index}
                     form={form}
-                    academicLevels={academicLevels}
-                    onDelete={removeAcademicRecord}
+                    famRelations={familyRelations}
+                    onDelete={removeFamilyMember}
                 />
             ))}
 
@@ -430,8 +640,8 @@ const ProfileUpdateModal = ({ user, opened }) => {
             </Button>
 
             <Group position="apart" mt="xl" justify="right">
-                <Button variant="light" leftSection={<IconArrowLeft size={14}/>} color="gray" onClick={prevStep}>Previous</Button>
-                <Button variant="light" leftSection={<IconCheck size={14}/>} color="green" onClick={handleSubmitProfile}>Finish & Submit</Button>
+                <Button variant="subtle" leftSection={<IconArrowLeft size={14}/>} color="gray" onClick={prevStep}>Previous</Button>
+                <Button variant="light" leftSection={<IconCheck size={14}/>} color="green" onClick={handleSubmitProfile} loading={isSubmitting}>Finish & Submit</Button>
             </Group>
         </Stack>
     );
@@ -451,7 +661,7 @@ const ProfileUpdateModal = ({ user, opened }) => {
         {activeStep === -1 ? (
             renderConsentSection()
         ) : (
-            <Stepper active={activeStep} onStepClick={setActiveStep} breakpoint="sm" size="sm">
+            <Stepper active={activeStep} onStepClick={setActiveStep} allowNextStepsSelect={false}  breakpoint="sm" size="sm">
                 <Stepper.Step label="Personal Information" description="Basic details">
                     {renderPersonalInfo()}
                 </Stepper.Step>

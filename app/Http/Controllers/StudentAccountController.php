@@ -111,7 +111,177 @@ class StudentAccountController extends Controller
         return response()->json($data);
     }
 
-    // Create/Update student's personal information from their own account
+    // Create student profile
+    public function createStudentProfile(Request $request)
+    {
+        $data = json_decode($request->input('profile_data'), true);
+
+        if (!$data) {
+            return response()->json(['message' => 'Invalid profile data payload', 'type' => 'error'], 400);
+        }
+
+        // 2. Validation (Using the decoded data)
+        $validator = Validator::make($data, [
+            'id' => 'required|exists:student_accounts,id',
+            'id_number' => 'required|string|min:7|max:10',
+            'first_name'=> 'required|string|max:255',
+            'last_name'=> 'required|string|max:255',
+            'records' => 'array',
+            'family_members' => 'array',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $studentId = $data['id'];
+            $studentAccount = StudentAccount::findOrFail($studentId);
+
+            // --- A. UPDATE STUDENT ACCOUNT ---
+            $studentAccount->update([
+                'id_number' => $data['id_number'],
+                'email_address' => $data['email_address'],
+                'first_name' => $data['first_name'],
+                'middle_name' => $data['middle_name'] ?? null,
+                'last_name' => $data['last_name'],
+                'ext_name' => $data['ext_name'] ?? null,
+            ]);
+
+            // --- B. UPDATE STUDENT PROFILE ---
+            $studentProfile = StudentProfile::firstOrNew(['student_account_id' => $studentId]);
+            
+            $profileFields = [
+                'birthday', 'gender', 'civil_status', 'contact_number', 'nationality', 'blood_type',
+                'address_region_id', 'address_province_id', 'address_municipality_id', 'address_barangay_id', 
+                'address_street', 'address_zip_code'
+            ];
+
+            foreach ($profileFields as $field) {
+                if (isset($data[$field])) {
+                    $studentProfile->$field = $data[$field];
+                }
+            }
+
+            // --- C. HANDLE IMAGE UPLOADS ---
+            if ($request->hasFile('profile_picture')) {
+                if ($studentProfile->profile_pic && Storage::disk('public')->exists($studentProfile->profile_pic)) {
+                    Storage::disk('public')->delete($studentProfile->profile_pic);
+                }
+                $extension = $request->file('profile_picture')->getClientOriginalExtension();
+                $customName = "{$studentAccount->id_number}_profile." . $extension;
+                $studentProfile->profile_pic = $request->file('profile_picture')->storeAs('images/profile_pictures', $customName, 'public');
+            }
+
+            if ($request->hasFile('e_signature')) {
+                if ($studentProfile->e_signature && Storage::disk('public')->exists($studentProfile->e_signature)) {
+                    Storage::disk('public')->delete($studentProfile->e_signature);
+                }
+                $extension = $request->file('e_signature')->getClientOriginalExtension();
+                $customName = "{$studentAccount->id_number}_signature." . $extension;
+                $studentProfile->e_signature = $request->file('e_signature')->storeAs('images/e_signature', $customName, 'public');
+            }
+
+            $studentProfile->save();
+
+            if (isset($data['educ_background'])) {
+                EducBackground::where('student_account_id', $studentId)->delete();
+                
+                foreach ($data['educ_background'] as $record) {
+                    // Skip empty rows
+                    if (empty($record['level_id']) || empty($record['school_id'])) continue;
+
+                    $schoolInput = trim($record['school_id']);
+                    $finalSchoolId = null;
+
+                    $existingSchool = DB::table('educ_background_schools')
+                        ->where('name', $schoolInput)
+                        ->first();
+
+                    if ($existingSchool) {
+                        $finalSchoolId = $existingSchool->id;
+                    } else {
+                        $abbreviation = '';
+                        $words = explode(' ', $schoolInput);
+                        foreach ($words as $word) {
+                            // Strip out any punctuation (e.g., if they typed "University (LNU)")
+                            $cleanWord = preg_replace('/[^a-zA-Z]/', '', $word);
+                            if (!empty($cleanWord)) {
+                                $abbreviation .= strtoupper(substr($cleanWord, 0, 1));
+                            }
+                        }
+
+                        $finalSchoolId = DB::table('educ_background_schools')->insertGetId([
+                            'name' => $schoolInput,
+                            'abbreviation' => substr($abbreviation, 0, 15)
+                        ]);
+                    }
+
+                    EducBackground::create([
+                        'student_account_id' => $studentId,
+                        'level_id' => $record['level_id'],
+                        'school_id' => $finalSchoolId,
+                        'period_from' => $record['period_from'] ?? null,
+                        'period_to' => $record['period_to'] ?? null,
+                        'year_graduated' => $record['year_graduated'] ?? null,
+                        'honors' => $record['honors'] ?? null,
+                        'degree' => $record['degree'] ?? null,
+                        'units_earned' => $record['units_earned'] !== '' ? $record['units_earned'] : null
+                    ]);
+                }
+            }
+
+            // --- E. SYNC FAMILY BACKGROUND ---
+            if (isset($data['fam_background'])) {
+                // Adjust 'FamilyBackground' to match your actual model name
+                FamBackground::where('student_account_id', $studentId)->delete();
+                
+                foreach ($data['fam_background'] as $member) {
+                    if (empty($member['relation_id']) || empty($member['first_name'])) continue;
+
+                    FamBackground::create([
+                        'student_account_id' => $studentId,
+                        'relation_id' => $member['relation_id'],
+                        'is_guardian' => $member['is_guardian'] ?? false,
+                        'first_name' => $member['first_name'],
+                        'middle_name' => $member['middle_name'] ?? null,
+                        'last_name' => $member['last_name'],
+                        'ext_name' => $member['ext_name'] ?? null,
+                        'birthday' => $member['birthday'] ?? null,
+                        'contact_number' => $member['contact_number'] ?? null,
+                        'email_address' => $member['email_address'] ?? null,
+                        'occupation' => $member['occupation'] ?? null,
+                        'employer' => $member['employer'] ?? null,
+                        'employer_address' => $member['employer_address'] ?? null,
+                        'employer_contact' => $member['employer_contact'] ?? null,
+                    ]);
+                }
+            }
+
+            // Log user activity
+            StudentLogsProvider::log('Created student profile', 3, 'My Profile');
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Profile successfully updated!',
+                'type' => 'success',
+                'newProfilePicUrl' => $studentProfile->profile_pic ? asset('storage/' . $studentProfile->profile_pic) : null,
+            ], 200);
+
+        } catch(\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Failed updating profile!',
+                'error' => $e->getMessage(), 
+                'type' => 'error',
+            ], 500); 
+        }
+    }
+    
+    // Update student's personal information from their own account
     public function updateStudentProfileInfo(Request $request)
     {
         // 1. Validation

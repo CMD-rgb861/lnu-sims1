@@ -51,15 +51,15 @@ export const SidebarFooterComponent = () => {
                 <Menu.Target>
                 <UnstyledButton
                     sx={(theme) => ({
-                    display: 'block',
-                    width: '100%',
-                    padding: theme.spacing.sm,
-                    borderRadius: theme.radius.sm,
+                        display: 'block',
+                        width: '100%',
+                        padding: theme.spacing.sm,
+                        borderRadius: theme.radius.sm,
                     })}
                 >
                     <Group gap="md">
                     <Avatar
-                        src={`${STORAGE_URL}${user.student_profile?.profile_pic}` || dicebearUrl}
+                        src={`${STORAGE_URL}${user.student_profile?.profile_pic}` || 'test'}
                         alt={fullName || 'User'}
                         radius="xl"
                         size="md"

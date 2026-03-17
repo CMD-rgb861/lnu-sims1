@@ -18,6 +18,7 @@ import EmployeeAccountsPage from './pages/EmployeeAccount/UserManagement/Employe
 import PersonalInformationPage from './pages/StudentAccount/MyProfile/PersonalInformationPage';
 import EducationalBackgroundPage from './pages/StudentAccount/MyProfile/EducationalBackgroundPage';
 import FamilyBackgroundPage from './pages/StudentAccount/MyProfile/FamilyBackgroundPage';
+import Error404Page from './pages/Errors/Error404Page';
 
 function App() {
     const dispatch = useDispatch();
@@ -67,29 +68,29 @@ function App() {
           />
           <ModalsProvider>
             <Routes>
-              {/* --- PUBLIC ROUTES --- */}
-              <Route path="/" element={<LoginPage />} />
-              <Route path="/login" element={<LoginPage />} />
+                {/* --- PUBLIC ROUTES --- */}
+                <Route path="/" element={<LoginPage />} />
+                <Route path="/login" element={<LoginPage />} />
 
-            
-              {/* --- PROTECTED ROUTES --- */}
-              <Route element={<ProtectedRoute />}>
-                <Route element={<AppLayout />}>
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/dashboard" element={<DashboardPage />} />
+                
+                {/* --- PROTECTED ROUTES --- */}
+                <Route element={<ProtectedRoute />}>
+                    <Route element={<AppLayout />}>
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route path="/dashboard" element={<DashboardPage />} />
 
-                    {/* --- PROTECTED ROUTES FOR STUDENT ACCOUNTs --- */}
-                    <Route path="/mp/personal-information" element={<PersonalInformationPage />} />
-                    <Route path="/mp/educational-background" element={<EducationalBackgroundPage />} />
-                    <Route path="/mp/family-background" element={<FamilyBackgroundPage />} />
+                        {/* --- PROTECTED ROUTES FOR STUDENT ACCOUNTs --- */}
+                        <Route path="/mp/personal-information" element={<PersonalInformationPage />} />
+                        <Route path="/mp/educational-background" element={<EducationalBackgroundPage />} />
+                        <Route path="/mp/family-background" element={<FamilyBackgroundPage />} />
 
-                    {/* --- PROTECTED ROUTES FOR EMPLOYEE ACCOUNTs --- */}
-                    <Route path="/um/employees" element={<EmployeeAccountsPage />} />
+                        {/* --- PROTECTED ROUTES FOR EMPLOYEE ACCOUNTs --- */}
+                        <Route path="/um/employees" element={<EmployeeAccountsPage />} />
+                    </Route>
                 </Route>
-              </Route>
 
-              {/* --- NOT FOUND --- */}
-              {/* <Route path="*" element={<NotFoundPage />} /> */}
+                {/* --- NOT FOUND --- */}
+                <Route path="*" element={<Error404Page />} />
             </Routes>
           </ModalsProvider>
         </MantineProvider>

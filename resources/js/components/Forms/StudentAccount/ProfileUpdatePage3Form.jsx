@@ -5,7 +5,7 @@ import { IconTrash } from '@tabler/icons-react';
 const ProfileUpdatePage3Form = ({ form, index, famRelations, onDelete }) => {
     
     // Safely grab the current record to check for the ID on delete
-    const currentRecord = form.values.family_members[index] || {};
+    const currentRecord = form.values.fam_background[index] || {};
 
     return (
         <Paper withBorder px="lg" pt="xl" pb="lg" radius="lg" mb="md">
@@ -16,13 +16,19 @@ const ProfileUpdatePage3Form = ({ form, index, famRelations, onDelete }) => {
                         withAsterisk
                         label="Relationship"
                         placeholder="Select Relationship"
-                        data={(Array.isArray(famRelations) ? famRelations : []).map(relation => ({ 
-                            value: relation.id?.toString() || '', 
-                            label: relation.description || 'Unknown' 
-                        }))}
+                        data={(Array.isArray(famRelations) ? famRelations : [])
+                            .filter(relation => relation !== null && typeof relation === 'object')
+                            .map(relation => ({ 
+                                value: String(relation.id || relation.relation_id || relation.value || ''), 
+                                label: String(relation.description || relation.name || relation.label || 'Unknown') 
+                            }))
+                            .filter(item => item.value !== '')
+                        }
                         searchable
                         clearable
-                        {...form.getInputProps(`family_members.${index}.relation_id`)}
+                        comboboxProps={{ withinPortal: false }}
+                        maxDropdownHeight={200}
+                        {...form.getInputProps(`fam_background.${index}.relation_id`)}
                     />
                 </Grid.Col>
 
@@ -34,7 +40,18 @@ const ProfileUpdatePage3Form = ({ form, index, famRelations, onDelete }) => {
                         labelPosition="right"
                         label="Set as Guardian"
                         color="blue"
-                        {...form.getInputProps(`family_members.${index}.is_guardian`, { type: 'checkbox' })}
+                        checked={currentRecord.is_guardian || false}
+                        onChange={(event) => {
+                        const isChecked = event.currentTarget.checked;
+
+                        if (isChecked) {
+                            form.values.fam_background.forEach((_, i) => {
+                                form.setFieldValue(`fam_background.${i}.is_guardian`, i === index);
+                            });
+                        } else {
+                            form.setFieldValue(`fam_background.${index}.is_guardian`, false);
+                        }
+                    }}
                     />
                 </Grid.Col>
                 
@@ -44,14 +61,14 @@ const ProfileUpdatePage3Form = ({ form, index, famRelations, onDelete }) => {
                         withAsterisk
                         label="First Name"
                         placeholder="First Name"
-                        {...form.getInputProps(`family_members.${index}.first_name`)}
+                        {...form.getInputProps(`fam_background.${index}.first_name`)}
                     />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 3 }}>
                     <TextInput
                         label="Middle Name"
                         placeholder="Middle Name"
-                        {...form.getInputProps(`family_members.${index}.middle_name`)}
+                        {...form.getInputProps(`fam_background.${index}.middle_name`)}
                     />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 3 }}>
@@ -59,14 +76,14 @@ const ProfileUpdatePage3Form = ({ form, index, famRelations, onDelete }) => {
                         withAsterisk
                         label="Last Name"
                         placeholder="Last Name"
-                        {...form.getInputProps(`family_members.${index}.last_name`)}
+                        {...form.getInputProps(`fam_background.${index}.last_name`)}
                     />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 3 }}>
                     <TextInput
                         label="Extension Name"
                         placeholder="e.g. Jr., Sr."
-                        {...form.getInputProps(`family_members.${index}.ext_name`)}
+                        {...form.getInputProps(`fam_background.${index}.ext_name`)}
                     />
                 </Grid.Col>
 
@@ -76,7 +93,7 @@ const ProfileUpdatePage3Form = ({ form, index, famRelations, onDelete }) => {
                         type="date"
                         label="Birthday"
                         placeholder="Birthday"
-                        {...form.getInputProps(`family_members.${index}.birthday`)}
+                        {...form.getInputProps(`fam_background.${index}.birthday`)}
                     />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 4 }}>
@@ -84,14 +101,14 @@ const ProfileUpdatePage3Form = ({ form, index, famRelations, onDelete }) => {
                         withAsterisk
                         label="Contact Number"
                         placeholder="Contact Number"
-                        {...form.getInputProps(`family_members.${index}.contact_number`)}
+                        {...form.getInputProps(`fam_background.${index}.contact_number`)}
                     />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 4 }}>
                     <TextInput
                         label="Email Address"
                         placeholder="Email Address"
-                        {...form.getInputProps(`family_members.${index}.email_address`)}
+                        {...form.getInputProps(`fam_background.${index}.email_address`)}
                     />
                 </Grid.Col>
 
@@ -100,14 +117,14 @@ const ProfileUpdatePage3Form = ({ form, index, famRelations, onDelete }) => {
                     <TextInput
                         label="Occupation"
                         placeholder="Occupation"
-                        {...form.getInputProps(`family_members.${index}.occupation`)}
+                        {...form.getInputProps(`fam_background.${index}.occupation`)}
                     />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 6 }}>
                     <TextInput
                         label="Employer"
                         placeholder="Employer"
-                        {...form.getInputProps(`family_members.${index}.employer`)}
+                        {...form.getInputProps(`fam_background.${index}.employer`)}
                     />
                 </Grid.Col>
 
@@ -116,14 +133,14 @@ const ProfileUpdatePage3Form = ({ form, index, famRelations, onDelete }) => {
                     <TextInput
                         label="Employer Address"
                         placeholder="Employer Address"
-                        {...form.getInputProps(`family_members.${index}.employer_address`)}
+                        {...form.getInputProps(`fam_background.${index}.employer_address`)}
                     />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 6 }}>
                     <TextInput
                         label="Employer Contact"
                         placeholder="Employer Contact Number"
-                        {...form.getInputProps(`family_members.${index}.employer_contact`)}
+                        {...form.getInputProps(`fam_background.${index}.employer_contact`)}
                     />
                 </Grid.Col>
 

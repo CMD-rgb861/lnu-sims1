@@ -9,11 +9,11 @@ const ProfileUpdatePage2Form = ({ form, index, academicLevels, onDelete }) => {
     const isFirstRender = useRef(true);
 
     // Read the current state of this specific record from the Mantine form
-    const currentRecord = form.values.records[index] || {};
+    const currentRecord = form.values.educ_background[index] || {};
 
     // --- SCHOOL SEARCH LOGIC ---
-    const [searchValue, setSearchValue] = useState('');
-    const [debouncedSearch] = useDebouncedValue(searchValue, 300); 
+    const formSchoolValue = currentRecord.school_id || '';
+    const [debouncedSearch] = useDebouncedValue(formSchoolValue, 300); 
     const [schoolOptions, setSchoolOptions] = useState([]);
 
     useEffect(() => {
@@ -25,7 +25,12 @@ const ProfileUpdatePage2Form = ({ form, index, academicLevels, onDelete }) => {
         if (debouncedSearch.length >= 2) {
             axiosClient.get(`/api/mp/fetch/educ-schools/search?term=${debouncedSearch}`)
             .then(response => {
-                setSchoolOptions(response.data || []);
+                // setSchoolOptions(response.data?.map(school => ({
+                //     value: String(school.id), 
+                //     label: school.name 
+                // })));
+                const stringOptions = response.data?.map(school => school.name) || [];
+                setSchoolOptions(stringOptions);
             })
             .catch(error => console.error("Error fetching schools", error));
         } else {
@@ -33,10 +38,10 @@ const ProfileUpdatePage2Form = ({ form, index, academicLevels, onDelete }) => {
         }
     }, [debouncedSearch]);
 
-    const handleSchoolChange = (val) => {
-        setSearchValue(val); 
-        form.setFieldValue(`records.${index}.school_id`, val);
-    };
+    // const handleSchoolChange = (val) => {
+    //     setSearchValue(val); 
+    //     form.setFieldValue(`records.${index}.school_id`, val);
+    // };
 
     // --- YEAR GENERATION ---
     const currentYear = new Date().getFullYear();
@@ -46,16 +51,19 @@ const ProfileUpdatePage2Form = ({ form, index, academicLevels, onDelete }) => {
     }, [currentYear]);
 
     const toYears = useMemo(() => {
-        const startYear = 1900;
-        const maxStart = Math.max(startYear, 1900);
-        return Array.from({ length: currentYear - maxStart + 1 }, (_, i) => (currentYear - i).toString());
-    }, [currentYear]);
+        const selectedFromYear = currentRecord.period_from;
+        const allYears = Array.from({ length: (currentYear + 5) - 1980 + 1 }, (_, i) => String((currentYear + 5) - i));
+        if (selectedFromYear) {
+            return allYears.filter(year => parseInt(year) >= parseInt(selectedFromYear));
+        }
+        return allYears;
+    }, [currentYear, currentRecord.period_from]);
 
     const gradYears = useMemo(() => {
         return ['N/A', ...fromYears];
     }, [fromYears]);
 
-    // Determines if Degree/Units should be shown based on level (Optional logic you can adjust later)
+
     const showDegreeAndUnits = false; 
 
     return (
@@ -70,7 +78,9 @@ const ProfileUpdatePage2Form = ({ form, index, academicLevels, onDelete }) => {
                         data={academicLevels.map(level => ({ value: level.id.toString(), label: level.name }))}
                         searchable
                         clearable
-                        {...form.getInputProps(`records.${index}.level_id`)}
+                        comboboxProps={{ withinPortal: false }}
+                        maxDropdownHeight={200}
+                        {...form.getInputProps(`educ_background.${index}.level_id`)}
                     />
                 </Grid.Col>
                     
@@ -80,10 +90,8 @@ const ProfileUpdatePage2Form = ({ form, index, academicLevels, onDelete }) => {
                         label="School Name"
                         placeholder="Type to search school..."
                         data={schoolOptions}
-                        value={searchValue}
-                        onChange={handleSchoolChange}
-                        maxDropdownHeight={200}
-                        error={form.errors[`records.${index}.school_id`]}
+                        error={form.errors[`educ_background.${index}.school_id`]}
+                        {...form.getInputProps(`educ_background.${index}.school_id`)}
                     />
                 </Grid.Col>
 
@@ -96,7 +104,9 @@ const ProfileUpdatePage2Form = ({ form, index, academicLevels, onDelete }) => {
                         data={fromYears}
                         searchable
                         clearable
-                        {...form.getInputProps(`records.${index}.period_from`)}
+                        comboboxProps={{ withinPortal: false }}
+                        maxDropdownHeight={200}
+                        {...form.getInputProps(`educ_background.${index}.period_from`)}
                     />
                 </Grid.Col>
 
@@ -108,8 +118,10 @@ const ProfileUpdatePage2Form = ({ form, index, academicLevels, onDelete }) => {
                         data={toYears}
                         searchable
                         clearable
+                        comboboxProps={{ withinPortal: false }}
+                        maxDropdownHeight={200}
                         disabled={!currentRecord.period_from} // Safely checks form state
-                        {...form.getInputProps(`records.${index}.period_to`)}
+                        {...form.getInputProps(`educ_background.${index}.period_to`)}
                     />
                 </Grid.Col>
 
@@ -121,7 +133,9 @@ const ProfileUpdatePage2Form = ({ form, index, academicLevels, onDelete }) => {
                         data={gradYears}
                         searchable
                         clearable
-                        {...form.getInputProps(`records.${index}.year_graduated`)}
+                        comboboxProps={{ withinPortal: false }}
+                        maxDropdownHeight={200}
+                        {...form.getInputProps(`educ_background.${index}.year_graduated`)}
                     />
                 </Grid.Col>
 
@@ -129,7 +143,7 @@ const ProfileUpdatePage2Form = ({ form, index, academicLevels, onDelete }) => {
                     <TextInput
                         label="Honors Received"
                         placeholder="e.g., Cum Laude, Valedictorian"
-                        {...form.getInputProps(`records.${index}.honors`)}
+                        {...form.getInputProps(`educ_background.${index}.honors`)}
                     />
                 </Grid.Col>
 
@@ -140,7 +154,7 @@ const ProfileUpdatePage2Form = ({ form, index, academicLevels, onDelete }) => {
                             <TextInput
                                 label="Senior High School Strand / College Degree"
                                 placeholder="Degree or Strand"
-                                {...form.getInputProps(`records.${index}.degree`)}
+                                {...form.getInputProps(`educ_background.${index}.degree`)}
                             />
                         </Grid.Col>
 
@@ -149,7 +163,7 @@ const ProfileUpdatePage2Form = ({ form, index, academicLevels, onDelete }) => {
                                 label="Units Earned"
                                 placeholder="Units Earned"
                                 min={0}
-                                {...form.getInputProps(`records.${index}.units_earned`)}
+                                {...form.getInputProps(`educ_background.${index}.units_earned`)}
                             />
                         </Grid.Col>
                     </>
@@ -162,7 +176,7 @@ const ProfileUpdatePage2Form = ({ form, index, academicLevels, onDelete }) => {
                             color="red" 
                             variant="subtle" 
                             leftSection={<IconTrash size={16} />}
-                            onClick={() => onDelete(index)} // Only pass index now
+                            onClick={() => onDelete(index)} 
                             fz="xs"
                         >
                             Remove Level

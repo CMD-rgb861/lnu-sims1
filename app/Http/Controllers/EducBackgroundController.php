@@ -29,6 +29,15 @@ class EducBackgroundController extends Controller
         ]);
     }
 
+    
+    // Fetch academic levels for initial profile update
+    public function fetchAcademicLevels()
+    { 
+        $academicLevels = DB::table('educ_background_levels')->orderBy('id', 'asc')->get();
+        return response()->json($academicLevels);
+    }
+
+
     public function fetchSchools(Request $request)
     {
         $term = trim($request->get('term', ''));
@@ -44,12 +53,15 @@ class EducBackgroundController extends Controller
             })
             ->orderBy('name')
             ->limit(10)
-            ->get(['name', 'abbreviation']);
+            ->get(['id','name', 'abbreviation']);
 
         $formatted = $schools->map(function ($school) {
-            return $school->abbreviation 
-                ? "{$school->name}" 
-                : $school->name;
+            return [
+                'id' => $school->id,
+                'name' => $school->abbreviation 
+                    ? "{$school->name}" 
+                    : $school->name
+            ];
         });
 
         return response()->json($formatted);

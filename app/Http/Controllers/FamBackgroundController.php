@@ -37,6 +37,14 @@ class FamBackgroundController extends Controller
         }
     }
 
+    // Fetch fa for initial profile update
+    public function fetchFamRelations()
+    { 
+        $famRelations = DB::table('fam_background_relations')->orderBy('id', 'asc')->get();
+        return response()->json($famRelations);
+    }
+
+
     // // Create family background
     // public function createFamilyBackground(Request $request)
     // {

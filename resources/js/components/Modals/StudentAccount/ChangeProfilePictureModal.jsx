@@ -193,9 +193,10 @@ const ChangeProfilePictureModal = ({
                 color="red" 
                 variant="light" 
                 mb="md"
-                radius="md"
+                radius="lg"
                 withCloseButton
                 onClose={() => setErrorMessage(null)}
+                gap="xs"
                 >
                     <Text fz="xs" c="red">{errorMessage}</Text>
                 </Alert>

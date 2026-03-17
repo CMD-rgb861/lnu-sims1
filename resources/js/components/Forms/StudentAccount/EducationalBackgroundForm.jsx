@@ -26,7 +26,8 @@ const EducationalBackgroundForm = ({ form, index, academicLevels, onChange, onDe
         if (debouncedSearch.length >= 2) {
             axiosClient.get(`/api/mp/fetch/educ-schools/search?term=${debouncedSearch}`)
             .then(response => {
-            setSchoolOptions(response.data || []);
+                const stringOptions = response.data?.map(school => school.name) || [];
+                setSchoolOptions(stringOptions);
             })
             .catch(error => console.error("Error fetching schools", error));
         } else {
