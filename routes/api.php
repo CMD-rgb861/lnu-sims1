@@ -110,8 +110,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/upload-pictures', [StudentAccountController::class, 'uploadStudentPictures'])->name('uploadStudentPictures');
         Route::post('/create-profile', [StudentAccountController::class, 'createStudentProfile'])->name('createStudentProfile');
         Route::put('/update-personal-info', [StudentAccountController::class, 'updateStudentProfileInfo'])->name('updateStudentProfileInfo');
-        Route::put('/update-educ-background/{id}', [EducBackgroundController::class, 'createEducationalBackground'])->name('createEducationalBackground');
+        Route::put('/update-educ-background/{id}', [EducBackgroundController::class, 'updateEducationalBackground'])->name('updateEducationalBackground');
         Route::delete('/delete-educ-background/{id}', [EducBackgroundController::class, 'deleteEducationalBackground'])->name('deleteEducationalBackground');
+        Route::put('/update-fam-background/{id}', [FamBackgroundController::class, 'updateFamBackground'])->name('updateFamBackground');
+        Route::delete('/delete-fam-background/{id}', [FamBackgroundController::class, 'deleteFamBackground'])->name('deleteFamBackground');
     });
+
+    // CATCH ALL ROUTES
     
 });

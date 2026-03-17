@@ -67,8 +67,8 @@ class EducBackgroundController extends Controller
         return response()->json($formatted);
     }
 
-    // Create educational background
-    public function createEducationalBackground(Request $request, $targetId = null)
+    // Update educational background
+    public function updateEducationalBackground(Request $request, $targetId = null)
     {
         $validator = Validator::make($request->all(), [
             'records'                  => 'required|array',

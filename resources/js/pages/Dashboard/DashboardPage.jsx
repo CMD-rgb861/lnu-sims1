@@ -12,13 +12,15 @@ const DashboardPage = () => {
     // 1. Move ALL hooks inside the component body
     const { user, user_type, user_role_level } = useSelector((state) => state.auth);
     const isStudent = user_type === 'Student';
-    const [showProfileModal, setShowProfileModal] = useState(false);
-    const [profileUpdateModalOpened, { open: openProfileUpdateModal, close: closeProfileUpdateModal }] = useDisclosure(true);
+    const [profileUpdateModalOpened, { open: openProfileUpdateModal, close: closeProfileUpdateModal }] = useDisclosure(false);
 
     useEffect(() => {
         if (isStudent && user && user.has_profile === false) {
-        setShowProfileModal(true);
+            openProfileUpdateModal();
+        }else{
+            closeProfileUpdateModal();
         }
+
     }, [isStudent, user]);
 
     const renderDashboardContent = () => {

@@ -56,6 +56,7 @@ const FamilyBackgroundPage = () => {
 
     const [familyRecords, setFamilyRecords] = useState([]);
     const [familyRelations, setFamilyRelations] = useState([]);
+
     const form = useForm({
         initialValues: {
             records: [
@@ -77,7 +78,6 @@ const FamilyBackgroundPage = () => {
                 }
             ],
         },
-
         validate: {
             records: {
                 relation_id: (value) => (!value ? 'Relationship is required' : null),
@@ -177,7 +177,7 @@ const FamilyBackgroundPage = () => {
         if (recordId) {
             try {
                 setLoading(true);
-                await axiosClient.delete(`/api/mp/delete-family-background/${recordId}`);
+                await axiosClient.delete(`/api/mp/delete-fam-background/${recordId}`);
             } catch (error) {
                 console.error("Failed to delete record", error);
                 setLoading(false);
@@ -200,7 +200,7 @@ const FamilyBackgroundPage = () => {
         const id = user.id
 
         try {
-            await axiosClient.put(`/api/mp/update-family-background/${id}`, {
+            await axiosClient.put(`/api/mp/update-fam-background/${id}`, {
                 records: form.values.records
             });
             setLoading(true);
@@ -261,7 +261,7 @@ const FamilyBackgroundPage = () => {
                         radius="lg"
                         py="lg"
                     >
-                        <List size="xs" c="black" spacing={5} mt={2}>
+                        <List size="xs" spacing={5} mt={2}>
                             <List.Item>All fields marked with an asterisk (*) are required.</List.Item>
                             <List.Item>Click "Save Changes" to finalize your changes.</List.Item>
                         </List>

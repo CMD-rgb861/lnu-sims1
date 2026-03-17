@@ -20,6 +20,7 @@ import {
   Badge
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { useForm } from '@mantine/form';
 import { IconUser, IconSignature, IconAlertCircle, IconAlertTriangle, IconArrowBarToUp, IconSettings2 } from '@tabler/icons-react';
 
 import axiosClient from '../../../api/axiosClient';
@@ -52,6 +53,36 @@ const PersonalInformationPage = () => {
     const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
     const dicebearUrl = getDiceBearAvatar(fullName, 'initials');
 
+    const form = useForm({
+        initialValues: {
+            id_number: '', email_address: '', first_name: '', middle_name: '',
+            last_name: '', ext_name: '', birthday: '', gender: '', civil_status: '',
+            contact_number: '', nationality: '', blood_type: '', address_region_id: '',
+            address_province_id: '', address_municipality_id: '', address_barangay_id: '',
+            address_street: '', address_zip_code: '',
+        },
+        validate: {
+            first_name: (value) => (value.trim().length > 0 ? null : 'First name is required'),
+            last_name: (value) => (value.trim().length > 0 ? null : 'Last name is required'),
+            email_address: (value) => (/^\S+@\S+$/.test(value) ? null : 'Invalid email'),
+            contact_number: (value) => {
+                if (!value || value.trim().length === 0) return 'Contact number is required';
+                if (value.trim().length !== 11) return 'Must be exactly 11 digits';
+                if (!/^\d+$/.test(value)) return 'Must contain only numbers'; 
+                return null; 
+            },
+            birthday: (value) => (value?.trim().length > 0 ? null : 'Birthday is required'),
+            gender: (value) => (value?.trim().length > 0 ? null : 'Gender is required'),
+            civil_status: (value) => (value?.trim().length > 0 ? null : 'Civil status is required'),
+            nationality: (value) => (value?.trim().length > 0 ? null : 'Nationality is required'),
+            blood_type: (value) => (value?.trim().length > 0 ? null : 'Blood type is required'),
+            address_region_id: (value) => (value?.trim().length > 0 ? null : 'Region is required'),
+            address_province_id: (value) => (value?.trim().length > 0 ? null : 'Province is required'),
+            address_municipality_id: (value) => (value?.trim().length > 0 ? null : 'Municipality is required'),
+            address_barangay_id: (value) => (value?.trim().length > 0 ? null : 'Barangay is required'),
+        },
+    });
+
     const [studentDetails, setStudentDetails] = useState(null); 
     const [studentProfilePic, setStudentProfilePic] = useState(null); 
     const [studentSignature, setStudentSignature] = useState(null); 
@@ -74,21 +105,49 @@ const PersonalInformationPage = () => {
         ? `${import.meta.env.VITE_API_BASE_URL}/storage/` 
         : 'http://localhost:8000/storage/';
 
+    const populateForm = (data) => {
+        if (data.studentAccount || data.studentProfile) {
+            form.setValues({
+                id_number: data.studentAccount?.id_number || '',
+                email_address: data.studentAccount?.email_address || '',
+                first_name: data.studentAccount?.first_name || '',
+                middle_name: data.studentAccount?.middle_name || '',
+                last_name: data.studentAccount?.last_name || '',
+                ext_name: data.studentAccount?.ext_name || '',
+                
+                birthday: data.studentProfile?.birthday || '',
+                gender: data.studentProfile?.gender || '',
+                civil_status: data.studentProfile?.civil_status || '',
+                contact_number: data.studentProfile?.contact_number || '',
+                blood_type: data.studentProfile?.blood_type || '',
+                
+                nationality: data.studentProfile?.nationality ? String(data.studentProfile.nationality) : '',
+                address_region_id: data.studentProfile?.address_region_id ? String(data.studentProfile.address_region_id) : '',
+                address_province_id: data.studentProfile?.address_province_id ? String(data.studentProfile.address_province_id) : '',
+                address_municipality_id: data.studentProfile?.address_municipality_id ? String(data.studentProfile.address_municipality_id) : '',
+                address_barangay_id: data.studentProfile?.address_barangay_id ? String(data.studentProfile.address_barangay_id) : '',
+                address_street: data.studentProfile?.address_street || '',
+                address_zip_code: data.studentProfile?.address_zip_code || '',
+            });
+        }
+    };
+
     const refetchData = async () => {
         try {
-            const [studentDetailsReponse, nationalitiesResponse] = await Promise.all([
+            const [studentDetailsResponse, nationalitiesResponse] = await Promise.all([
             axiosClient.get(`api/mp/fetch/student-details/${user.id}`),
             ]);
-            setStudentDetails(studentDetailsReponse.data);
-            setStudentProfilePic(studentDetailsReponse.data.studentProfile.profile_pic);
-            setStudentSignature(studentDetailsReponse.data.studentProfile.e_signature);
+            const data = studentDetailsResponse.data;
+            setStudentProfilePic(studentDetailsResponse.data.studentProfile.profile_pic);
+            setStudentSignature(studentDetailsResponse.data.studentProfile.e_signature);
             setDropdownData({
-            nationalities: studentDetailsReponse.data.nationalities || [],
-            regions: studentDetailsReponse.data.regions || [],
-            provinces: studentDetailsReponse.data.provinces || [],
-            municipalities: studentDetailsReponse.data.municipalities || [],
-            barangays: studentDetailsReponse.data.barangays || []
+                nationalities: studentDetailsResponse.data.nationalities || [],
+                regions: studentDetailsResponse.data.regions || [],
+                provinces: studentDetailsResponse.data.provinces || [],
+                municipalities: studentDetailsResponse.data.municipalities || [],
+                barangays: studentDetailsResponse.data.barangays || []
             });
+            populateForm(data);
         } catch (error) {
         console.error("Failed to refetch data:", error);
         }
@@ -98,19 +157,21 @@ const PersonalInformationPage = () => {
         const fetchData = async () => {
         setLoading(true);
         try {
-            const [studentDetailsReponse] = await Promise.all([
+            const [studentDetailsResponse] = await Promise.all([
             axiosClient.get(`api/mp/fetch/student-details/${user.id}`),
             ]);
-            setStudentDetails(studentDetailsReponse.data);
-            setStudentProfilePic(studentDetailsReponse.data.studentProfile.profile_pic);
-            setStudentSignature(studentDetailsReponse.data.studentProfile.e_signature);
+            const data = studentDetailsResponse.data;
+            setStudentDetails(studentDetailsResponse.data);
+            setStudentProfilePic(studentDetailsResponse.data.studentProfile.profile_pic);
+            setStudentSignature(studentDetailsResponse.data.studentProfile.e_signature);
             setDropdownData({
-            nationalities: studentDetailsReponse.data.nationalities || [],
-            regions: studentDetailsReponse.data.regions || [],
-            provinces: studentDetailsReponse.data.provinces || [],
-            municipalities: studentDetailsReponse.data.municipalities || [],
-            barangays: studentDetailsReponse.data.barangays || []
+                nationalities: studentDetailsResponse.data.nationalities || [],
+                regions: studentDetailsResponse.data.regions || [],
+                provinces: studentDetailsResponse.data.provinces || [],
+                municipalities: studentDetailsResponse.data.municipalities || [],
+                barangays: studentDetailsResponse.data.barangays || []
             });
+            populateForm(data);
         } catch (error) {
             console.error("Failed to refetch data:", error);
         } finally {
@@ -125,7 +186,8 @@ const PersonalInformationPage = () => {
         setLoading(true);
         try {
         const payload = { 
-            ...values
+            ...values,
+            id: user.id
         };
         await axiosClient.put(`api/mp/update-personal-info`, payload);
         await refetchData();
@@ -392,7 +454,7 @@ const PersonalInformationPage = () => {
                             <Paper withBorder p="lg" radius="lg">
                                 <Text fz="md" fw={600}>Personal Information</Text>
                                 <PersonalInformationForm
-                                    userDetails={studentDetails}
+                                    form={form}
                                     dropdownData={dropdownData}
                                     onSubmit={handleUpdatePersonalInfo}
                                     isSubmitting={isSubmitting}

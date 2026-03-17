@@ -14,95 +14,32 @@ import {
 import { useForm } from '@mantine/form';
 
 const PersonalInformationForm = ({
-  userDetails,
+  form,
   dropdownData,
   onSubmit,
   isSubmitting
 }) => {
-  // Destructure dropdowns
-  const { nationalities, regions, provinces, municipalities, barangays } = dropdownData || {};
+    // Destructure dropdowns
+    const { nationalities, regions, provinces, municipalities, barangays } = dropdownData || {};
 
-  // Helper to format dropdown data for Mantine Selects
-  const formatSelectData = (data, valueKey, labelKey) => {
-    if (!data) return [];
-    return data.map((item) => ({
-      value: String(item[valueKey]),
-      label: item[labelKey],
-    }));
-  };
+    const formatSelectData = (data, valueKey, labelKey) => {
+        if (!data) return [];
+            return data.map((item) => ({
+            value: String(item[valueKey]),
+            label: item[labelKey],
+        }));
+    };
+   
+    // const handleSubmit = (values) => {
+    //     const submissionData = { ...values, id: userDetails?.studentAccount?.id };
+    //     onSubmit(submissionData);
+    // };
 
-  const form = useForm({
-    initialValues: {
-      id_number: '',
-      email_address: '',
-      first_name: '',
-      middle_name: '',
-      last_name: '',
-      ext_name: '',
-      birthday: '',
-      gender: '',
-      civil_status: '',
-      contact_number: '',
-      nationality: '',
-      blood_type: '',
-      address_region_id: '',
-      address_province_id: '',
-      address_municipality_id: '',
-      address_barangay_id: '',
-      address_street: '',
-      address_zip_code: '',
-    },
-    validate: {
-      first_name: (value) => (value.trim().length > 0 ? null : 'First name is required'),
-      last_name: (value) => (value.trim().length > 0 ? null : 'Last name is required'),
-      email_address: (value) => (/^\S+@\S+$/.test(value) ? null : 'Invalid email'),
-      id_number: (value) => (value.trim().length > 0 ? null : 'Student number is required'),
-    },
-  });
-
-  useEffect(() => {
-    if (userDetails) {
-      form.setValues({
-        // From studentAccount
-        id_number: userDetails.studentAccount?.id_number || '',
-        email_address: userDetails.studentAccount?.email_address || '',
-        first_name: userDetails.studentAccount?.first_name || '',
-        middle_name: userDetails.studentAccount?.middle_name || '',
-        last_name: userDetails.studentAccount?.last_name || '',
-        ext_name: userDetails.studentAccount?.ext_name || '',
-        
-        // From studentProfile
-        birthday: userDetails.studentProfile?.birthday || '',
-        gender: userDetails.studentProfile?.gender || '',
-        civil_status: userDetails.studentProfile?.civil_status || '',
-        contact_number: userDetails.studentProfile?.contact_number || '',
-        blood_type: userDetails.studentProfile?.blood_type || '',
-        
-        // Address Details (Casted to String for Mantine Select)
-        nationality: userDetails.studentProfile?.nationality ? String(userDetails.studentProfile?.nationality) : '',
-        address_region_id: userDetails.studentProfile?.address_region_id ? String(userDetails.studentProfile.address_region_id) : '',
-        address_province_id: userDetails.studentProfile?.address_province_id ? String(userDetails.studentProfile.address_province_id) : '',
-        address_municipality_id: userDetails.studentProfile?.address_municipality_id ? String(userDetails.studentProfile.address_municipality_id) : '',
-        address_barangay_id: userDetails.studentProfile?.address_barangay_id ? String(userDetails.studentProfile.address_barangay_id) : '',
-        address_street: userDetails.studentProfile?.address_street || '',
-        address_zip_code: userDetails.studentProfile?.address_zip_code || '',
-      });
-    } else {
-      form.reset();
-    }
-  }, [userDetails]);
-
-  const handleSubmit = (values) => {
-    // Merge the values with the student account ID
-    const submissionData = { ...values, id: userDetails?.studentAccount?.id };
-    onSubmit(submissionData);
-  };
-
-  return (
+    return (
     <>
         <Grid style={{ overflowX: 'hidden' }} mah="70vh">
             <Grid.Col span={12}>
-                <form onSubmit={form.onSubmit(handleSubmit)}>
+                <form onSubmit={form.onSubmit(onSubmit)}>
                     <LoadingOverlay visible={isSubmitting} overlayProps={{ blur: 2 }} />
                     <Grid>
                         <Grid.Col span={12}>
@@ -160,6 +97,7 @@ const PersonalInformationForm = ({
 
                             <Grid.Col span={{ base: 12, sm: 4 }}>
                                 <TextInput
+                                withAsterisk
                                 type="date"
                                 label="Birthday"
                                 {...form.getInputProps('birthday')}
@@ -167,6 +105,7 @@ const PersonalInformationForm = ({
                             </Grid.Col>
                             <Grid.Col span={{ base: 12, sm: 4 }}>
                                 <Select
+                                withAsterisk
                                 label="Gender"
                                 placeholder="Select Gender"
                                 data={['Male', 'Female']}
@@ -175,6 +114,7 @@ const PersonalInformationForm = ({
                             </Grid.Col>
                             <Grid.Col span={{ base: 12, sm: 4 }}>
                                 <Select
+                                withAsterisk
                                 label="Civil Status"
                                 placeholder="Select Civil Status"
                                 data={['Single', 'Married', 'Separated', 'Widow/Widower']}
@@ -184,6 +124,7 @@ const PersonalInformationForm = ({
 
                             <Grid.Col span={{ base: 12, sm: 4 }}>
                                 <TextInput
+                                withAsterisk
                                 label="Contact Number"
                                 placeholder="e.g. 09123456789"
                                 {...form.getInputProps('contact_number')}
@@ -191,6 +132,7 @@ const PersonalInformationForm = ({
                             </Grid.Col>
                             <Grid.Col span={{ base: 12, sm: 4 }}>
                                 <Select
+                                withAsterisk
                                 label="Nationality"
                                 placeholder="Select Nationality"
                                 searchable
@@ -200,6 +142,7 @@ const PersonalInformationForm = ({
                             </Grid.Col>
                             <Grid.Col span={{ base: 12, sm: 4 }}>
                                 <Select
+                                withAsterisk
                                 label="Blood Type"
                                 placeholder="Select Blood Type"
                                 data={['Unknown', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']}
@@ -215,6 +158,7 @@ const PersonalInformationForm = ({
                             <Grid>
                                 <Grid.Col span={{ base: 12, sm: 4 }}>
                                     <Select
+                                    withAsterisk
                                     label="Region"
                                     placeholder="Select Region"
                                     searchable
@@ -227,6 +171,7 @@ const PersonalInformationForm = ({
 
                                 <Grid.Col span={{ base: 12, sm: 4 }}>
                                     <Select
+                                    withAsterisk
                                     label="Province"
                                     placeholder="Select Province"
                                     searchable
@@ -237,6 +182,7 @@ const PersonalInformationForm = ({
                                 </Grid.Col>
                                 <Grid.Col span={{ base: 12, sm: 4 }}>
                                     <Select
+                                    withAsterisk
                                     label="City/Municipality"
                                     placeholder="Select Municipality"
                                     searchable
@@ -247,6 +193,7 @@ const PersonalInformationForm = ({
                                 </Grid.Col>
                                 <Grid.Col span={{ base: 12, sm: 4 }}>
                                     <Select
+                                    withAsterisk
                                     label="Barangay"
                                     placeholder="Select Barangay"
                                     searchable
@@ -258,6 +205,7 @@ const PersonalInformationForm = ({
 
                                 <Grid.Col span={12}>
                                     <TextInput
+                                    withAsterisk
                                     label="Street Address"
                                     placeholder="Street"
                                     {...form.getInputProps('address_street')}
@@ -266,6 +214,7 @@ const PersonalInformationForm = ({
 
                                 <Grid.Col span={{ base: 12, sm: 4 }}>
                                     <TextInput
+                                    withAsterisk
                                     label="ZIP Code"
                                     placeholder="ZIP Code"
                                     {...form.getInputProps('address_zip_code')}
@@ -292,7 +241,7 @@ const PersonalInformationForm = ({
             </Grid.Col>
         </Grid>
     </>
-  );
+    );
 };
 
 export default PersonalInformationForm;

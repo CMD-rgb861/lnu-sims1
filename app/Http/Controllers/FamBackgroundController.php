@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\EducBackground;
 use App\Models\FamBackground;
 use App\Models\StudentAccount;
+use App\Providers\StudentLogsProvider;
 use App\Providers\UserLogsProvider;
 
 use Illuminate\Http\Request;
@@ -44,6 +45,120 @@ class FamBackgroundController extends Controller
         return response()->json($famRelations);
     }
 
+    // Update family background
+    public function updateFamBackground(Request $request, $targetId = null)
+    {
+        $validator = Validator::make($request->all(), [
+            'records'                      => 'required|array',
+            'records.*.relation_id'        => 'required',
+            'records.*.first_name'         => 'required|string|max:255',
+            'records.*.last_name'          => 'required|string|max:255',
+            'records.*.middle_name'        => 'nullable|string|max:255',
+            'records.*.ext_name'           => 'nullable|string|max:255',
+            'records.*.birthday'           => 'nullable|date',
+            'records.*.contact_number'     => 'nullable|string|max:255',
+            'records.*.email_address'      => 'nullable|email|max:255',
+            'records.*.occupation'         => 'nullable|string|max:255',
+            'records.*.employer'           => 'nullable|string|max:255',
+            'records.*.employer_address'   => 'nullable|string|max:255',
+            'records.*.employer_contact'   => 'nullable|string|max:255',
+            'records.*.is_guardian'        => 'nullable|boolean',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Get student ID from URL parameter or request payload
+            $studentId = $targetId ?? $request->input('student_id') ?? request('studentId');
+            $records = $request->input('records', []);
+
+            foreach ($records as $record) {
+                
+                $editId = $record['id'] ?? null;
+
+                // Find existing record by ID or create a new instance
+                // We scope it to the student_account_id to prevent modifying other users' records
+                $familyBackground = FamBackground::firstOrNew([
+                    'id' => $editId,
+                    'student_account_id' => $studentId,
+                ]);
+
+                // Map the object properties
+                $familyBackground->relation_id      = $record['relation_id'];
+                $familyBackground->first_name       = $record['first_name'];
+                $familyBackground->middle_name      = $record['middle_name'] ?? null;
+                $familyBackground->last_name        = $record['last_name'];
+                $familyBackground->ext_name         = $record['ext_name'] ?? null;
+                $familyBackground->birthday         = $record['birthday'] ?? null;
+                $familyBackground->contact_number   = $record['contact_number'] ?? null;
+                $familyBackground->email_address    = $record['email_address'] ?? null;
+                $familyBackground->occupation       = $record['occupation'] ?? null;
+                $familyBackground->employer         = $record['employer'] ?? null;
+                $familyBackground->employer_address = $record['employer_address'] ?? null;
+                $familyBackground->employer_contact = $record['employer_contact'] ?? null;
+                $familyBackground->is_guardian      = $record['is_guardian'] ?? false;
+
+                $familyBackground->save();
+            }
+
+            DB::commit();
+
+            // Log user activity
+            StudentLogsProvider::log(
+                'Created/Updated family background records',
+                3,
+                'My Profile'
+            );
+
+            return response()->json([
+                'message' => 'Family background updated successfully!',
+                'type' => 'success',
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'message' => 'Failed updating family background! ' . $e->getMessage(),
+                'type' => 'error', 
+            ], 500); 
+        }
+    }
+
+    // Delete family background
+    public function deleteFamBackground($id)
+    {
+        DB::beginTransaction();
+        try {
+            // Adjust the model name "FamilyBackground" and relationships to match your actual model
+            $familyBackground = FamBackground::with(['student_account'])->findOrFail($id);
+            $familyBackground->delete();
+            
+            // Log user activity
+            StudentLogsProvider::log(
+                'Deleted family background record',
+                4,
+                'My Profile'
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Family background record deleted successfully!',
+                'type' => 'success',
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Failed to delete family background record. ' . $e->getMessage(),
+                'type' => 'error',
+            ], 500);
+        }
+    }
 
     // // Create family background
     // public function createFamilyBackground(Request $request)

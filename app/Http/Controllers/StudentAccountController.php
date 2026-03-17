@@ -286,12 +286,12 @@ class StudentAccountController extends Controller
     {
         // 1. Validation
         $validator = Validator::make($request->all(), [
-            'id' => 'required|exists:student_accounts,id', // Safety check added
+            'id' => 'required|exists:student_accounts,id', 
             'id_number' => 'required|string|min:7|max:10',
             'first_name'=> 'required|string|max:255',
             'middle_name'=> 'max:255',
             'last_name'=> 'required|string|max:255',
-            'ext_name'=> 'string|max:5',
+            'ext_name'=> 'nullable|string|max:5',
             'email_address'=> 'required|max:255',
             'birthday'=> 'required',
             'gender'=> 'required',
