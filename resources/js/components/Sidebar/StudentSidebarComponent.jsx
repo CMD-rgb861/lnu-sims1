@@ -54,13 +54,13 @@ const sidebarLinks = [
   { label: 'Help', icon: IconHelp, link: '/us' },
 ];
 
-    const StudentSidebarComponent = () => {
+const StudentSidebarComponent = () => {
     const { pathname } = useLocation(); 
 
     const links = sidebarLinks.map((item, index) => {
 
     if (item.type === 'divider') {
-      return <Divider size="xs" my="sm" key={`divider-${index}`} label={item.label} labelPosition="left" />;
+        return <Divider size="xs" my="sm" key={`divider-${index}`} label={item.label} labelPosition="left" />;
     }
 
     const IconComponent = item.icon;
@@ -80,20 +80,20 @@ const sidebarLinks = [
       
       return (
         <NavLink
-          key={item.label}
-          label={item.label}
-          leftSection={<IconComponent size={16} />}
-          childrenOffset={28}
-          defaultOpened={item.initiallyOpened || isChildActive}
+            key={item.label}
+            label={item.label}
+            leftSection={<IconComponent size={16} />}
+            childrenOffset={28}
+            defaultOpened={item.initiallyOpened || isChildActive}
         >
           {visibleChildLinks.map((link) => (
-            <NavLink
-              key={link.label}
-              label={link.label}
-              component={Link}
-              to={link.link}
-              active={pathname === link.link}
-            />
+                <NavLink
+                    key={link.label}
+                    label={link.label}
+                    component={Link}
+                    to={link.link}
+                    active={pathname === link.link}
+                />
           ))}
         </NavLink>
       );
@@ -120,14 +120,13 @@ const sidebarLinks = [
 
   return (
     <AppShell.Navbar className="navbar">
-   
-      <AppShell.Section className="links" grow component={ScrollArea} mx="-xs">
-        {links}
-      </AppShell.Section>
+        <AppShell.Section className="links" grow component={ScrollArea} mx="-xs">
+            {links}
+        </AppShell.Section>
 
-      <AppShell.Section>
-        <SidebarFooterComponent />
-      </AppShell.Section>
+        <AppShell.Section>
+            <SidebarFooterComponent />
+        </AppShell.Section>
     </AppShell.Navbar>
   );
 };

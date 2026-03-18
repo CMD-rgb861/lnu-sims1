@@ -57,7 +57,7 @@ class FamBackgroundController extends Controller
             'records.*.ext_name'           => 'nullable|string|max:255',
             'records.*.birthday'           => 'nullable|date',
             'records.*.contact_number'     => 'nullable|string|max:255',
-            'records.*.email_address'      => 'nullable|email|max:255',
+            'records.*.email_address'      => 'nullable|max:255',
             'records.*.occupation'         => 'nullable|string|max:255',
             'records.*.employer'           => 'nullable|string|max:255',
             'records.*.employer_address'   => 'nullable|string|max:255',
@@ -125,6 +125,43 @@ class FamBackgroundController extends Controller
                 'message' => 'Failed updating family background! ' . $e->getMessage(),
                 'type' => 'error', 
             ], 500); 
+        }
+    }
+
+    // Update guardian information
+    public function updateGuardian($id)
+    {
+        DB::beginTransaction();
+        try{
+            $familyRecord = FamBackground::findOrFail($id);
+            $studentId = $familyRecord->student_account_id; 
+
+            $familyRecord->update(['is_guardian' => 1]);
+
+            FamBackground::where('student_account_id', $studentId)
+                ->where('id', '!=', $id)
+                ->update(['is_guardian' => 0]);
+
+            DB::commit();
+
+            // Log user activity
+            StudentLogsProvider::log(
+                'Updated guardian information',
+                3,
+                'My Profile'
+            );
+                
+            return response()->json([
+                'type' => 'success',
+                'message' => 'Guardian updated successfully!',
+            ]);
+
+        }catch(\Exception $e){
+            DB::rollBack();
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Failed updating guardian details ' . $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -310,33 +347,6 @@ class FamBackgroundController extends Controller
          
     // }
 
-    // // Update guardian information
-    // public function updateGuardian($id)
-    // {
-    //     DB::beginTransaction();
-    //     try{
-    //         FamBackground::where('id', $id)
-    //             ->update(['is_guardian' => 1]);
-
-    //         FamBackground::where('id', '!=', $id)
-    //             ->update(['is_guardian' => 0]);
-
-    //         DB::commit();
-                
-    //         return response()->json([
-    //             'type' => 'success',
-    //             'message' => 'Guardian updated successfully!',
-    //         ]);
-
-    //     }catch(\Exception $e){
-    //         DB::rollBack();
-    //         return response()->json([
-    //             'type' => 'error',
-    //             'message' => 'Failed updating guardian details ' . $e->getMessage(),
-    //         ], 500);
-    //     }
-
-    // }
 
     // // Delete family background
     // public function deleteFamilyBackground($id)

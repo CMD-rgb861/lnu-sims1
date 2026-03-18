@@ -10,7 +10,7 @@ import EmployeeSidebarComponent from '../components/Sidebar/EmployeeSidebarCompo
 
 const AppLayout = () => {
     const theme = useMantineTheme();
-    const [opened, { toggle }] = useDisclosure(); 
+    const [opened, { toggle, close }] = useDisclosure();
     const version = import.meta.env.VITE_APP_VERSION;
 
     const { user_type } = useSelector((state) => state.auth);
@@ -24,13 +24,13 @@ const AppLayout = () => {
 
     return (
         <AppShell
-        px={20}
-        header={{ height: 50 }}
-        navbar={{
-            width: { sm: 250, lg: 300 },
-            breakpoint: 'lg',
-            collapsed: { mobile: !opened}, 
-        }}
+            px={20}
+            header={{ height: 50 }}
+            navbar={{
+                width: { sm: 250, lg: 300 },
+                breakpoint: 'lg',
+                collapsed: { mobile: !opened}, 
+            }}
         >
         <AppShell.Header>
             <Group justify="space-between" align="center" h="100%" px="sm" wrap="nowrap">
@@ -52,7 +52,12 @@ const AppLayout = () => {
 
         {renderSidebar()}
 
-        <AppShell.Main pt={80}>
+        <AppShell.Main 
+            pt={80} 
+            onClick={() => {
+                if (opened) close();
+            }}
+        >
             <Outlet />
         </AppShell.Main>
         </AppShell>

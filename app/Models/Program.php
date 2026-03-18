@@ -26,7 +26,7 @@ class Program extends Model
         return $this->belongsTo(UserAccount::class, 'coordinator_id');
     }
 
-    public function programLevel()
+    public function program_level()
     {
         return $this->belongsTo(ProgramLevel::class, 'program_level_id');
     }

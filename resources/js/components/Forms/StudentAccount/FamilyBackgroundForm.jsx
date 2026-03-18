@@ -1,7 +1,7 @@
 import { Grid, Select, TextInput, Switch, Button, Paper, Group, Divider } from '@mantine/core';
 import { IconTrash } from '@tabler/icons-react';
 
-const FamilyBackgroundForm = ({ form, index, famRelations, onDelete }) => {
+const FamilyBackgroundForm = ({ form, index, famRelations, onDelete, onUpdateGuardian }) => {
     
     // Safely grab the current record to check for the ID on delete
     const currentRecord = form.values.records[index] || {};
@@ -34,6 +34,17 @@ const FamilyBackgroundForm = ({ form, index, famRelations, onDelete }) => {
                         label="Set as Guardian"
                         color="blue"
                         {...form.getInputProps(`records.${index}.is_guardian`, { type: 'checkbox' })}
+                        onChange={(event) => {
+                            const isChecked = event.currentTarget.checked;
+
+                            form.values.records.forEach((_, i) => {
+                                form.setFieldValue(`records.${i}.is_guardian`, i === index);
+                            });
+
+                            if (isChecked && currentRecord.id) {
+                                onUpdateGuardian(currentRecord.id);
+                            }
+                        }}
                     />
                 </Grid.Col>
                 

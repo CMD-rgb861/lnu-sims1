@@ -230,6 +230,19 @@ class AuthController extends Controller
         if ($user instanceof StudentAccount) {
             $hasProfile = $user->student_profile()->exists();
             $user->has_profile = $hasProfile;
+
+            $activeSchoolYear = SchoolYear::where('is_active', 1)->first();
+            $hasActiveEnrollment = false;
+
+            if ($activeSchoolYear) {
+                $hasActiveEnrollment = $user->enrollment_detail()
+                    ->where('school_year_id', $activeSchoolYear->id)
+                    ->exists();
+            }
+
+            $user->has_active_enrollment = $hasActiveEnrollment;
+            $user->active_school_year = $activeSchoolYear;
+
             return response()->json([
                 'user' => $user,
                 'user_type' => 'Student',
@@ -352,21 +365,18 @@ class AuthController extends Controller
         ]);
     }
 
-    // Fetch account verification page
-    public function verifyForm()
-    {
-        return view('auth.account_verification');
-    }
-
     // Verify user account
-    public function verifySubmit(Request $request)
+    public function verifyAccount(Request $request)
     {
+        $request->validate([
+            'new_password' => 'required|string|min:8|confirmed'
+        ]);
+
         $guards = ['employee', 'student']; 
         $user = null;
         $activeGuard = null;
 
-        try{
-
+        try {
             foreach ($guards as $guard) {
                 if (Auth::guard($guard)->check()) {
                     $user = Auth::guard($guard)->user();
@@ -376,34 +386,48 @@ class AuthController extends Controller
             }
 
             if (!$user) {
-                abort(403, 'Unauthorized');
+                return response()->json([
+                    'message' => 'Unauthorized request.',
+                    'type' => 'error'
+                ], 403);
             }
 
+            // Update the user
             $request->user($activeGuard)->update([
                 'password' => Hash::make($request->new_password),
                 'profile_verified' => 1,
                 'is_logged_in' => 1
             ]);
 
-            $redirect = $activeGuard === 'employee'
-                ? 'employee.dashboard.index'
-                : 'student.dashboard.index';
+            // Log user verification based on user guard
+            if($activeGuard === 'employee'){
+                UserLogsProvider::log(
+                    'User account verified on first login',
+                    1,
+                    'Authentication'
+                );
+            } else if ($activeGuard == 'student') {
+                StudentLogsProvider::log(
+                    'Student account verified on first login',
+                    1,
+                    'Authentication'
+                );
+            }
 
-            return redirect()->route($redirect)->with('toast', [
-                'text' => 'Account verified and password updated!',
+            return response()->json([
+                'message' => 'Account verified and password updated successfully!',
                 'type' => 'success',
-            ]);
+            ], 200);
 
-        }catch(\Exception $e){
-            return redirect()->back()->with('toast', [
-                'text' => 'Account verification failed: ' . $e->getMessage(),
+        } catch(\Exception $e) {
+            return response()->json([
+                'message' => 'Account verification failed: ' . $e->getMessage(),
                 'type' => 'error',
-            ]);
+            ], 500);
         }
-
-
     }
 
+    // Logout current user
     public function logout(Request $request)
     {
         $guards = ['employee', 'student']; 

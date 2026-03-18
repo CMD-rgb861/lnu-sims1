@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -18,17 +19,16 @@ use Yajra\DataTables\Facades\DataTables;
 class ProgramController extends Controller
 {
 
-    // Fetch user roles for dropdown
-    public function data()
+    // Fetch all programs for dropdown
+    public function fetchPrograms()
     {
-        $programs = Program::all();
-
-        return response()->json([
-            'id' => $programs->id,
-            'program_name' => $programs->user_role_description,
-            'program_level_id' => $programs->user_role_level,
-            'dept_id' => $programs->dept_id
-        ]);
+        $programs = Cache::remember('programs_dropdown', 86400, function () {
+            return Program::select('id', 'program_name', 'program_level_id', 'dept_id')
+                          ->where('status', '=', 1)
+                          ->orderBy('program_name', 'asc')
+                          ->get();
+        });
+        return response()->json($programs);
     }
 
     // // Show programs index
@@ -120,6 +120,8 @@ class ProgramController extends Controller
     //             'type' => 'error',
     //         ]);
     //     }
+
+            // Cache::forget('programs_dropdown');
          
     // }
 

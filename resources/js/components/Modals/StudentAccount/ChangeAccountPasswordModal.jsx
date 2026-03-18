@@ -158,6 +158,9 @@ const ChangeAccountPasswordModal = ({ opened, onClose, onSubmit, isSubmitting })
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.currentTarget.value)}
             required
+            onPaste={(e) => {
+                e.preventDefault(); 
+            }}
             disabled={isSubmitting}
             error={
               confirmPassword && newPassword !== confirmPassword

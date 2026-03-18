@@ -167,7 +167,7 @@ const FamilyBackgroundPage = () => {
         form.insertListItem('records', {
             id: null, relation_id: '', first_name: 'N/A', middle_name: '',
             last_name: 'N/A', ext_name: 'N/A', birthday: '', contact_number: '', 
-            email_address: 'N/A', occupation: 'N/A', employer: 'N/A', employer_address: 'N/A',
+            email_address: '', occupation: 'N/A', employer: 'N/A', employer_address: 'N/A',
             employer_contact: 'N/A', is_guardian: 0
         });
        
@@ -206,6 +206,21 @@ const FamilyBackgroundPage = () => {
             setLoading(true);
         } catch (error) {
             console.error("Failed to save records", error);
+        } finally {
+            setIsSubmitting(false);
+            setLoading(false);
+        }
+    };
+
+    const handleUpdateGuardian = async (recordId) => {
+        if (!recordId) return; 
+        setIsSubmitting(true);
+        setLoading(true); 
+        
+        try {
+            await axiosClient.put(`/api/mp/update-guardian/${recordId}`);
+        } catch (error) {
+            console.error("Failed to update guardian", error);
         } finally {
             setIsSubmitting(false);
             setLoading(false);
@@ -278,6 +293,7 @@ const FamilyBackgroundPage = () => {
                                         form={form} 
                                         famRelations={familyRelations}
                                         onDelete={handleRemoveRecord}
+                                        onUpdateGuardian={handleUpdateGuardian}
                                     />
                                 ))}
 

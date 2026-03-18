@@ -145,7 +145,7 @@ const LoginPage = () => {
                                                     placeholder={userType === 'student' ? "Student ID" : "Employee ID"}
                                                     value={idNum}
                                                     onChange={(e) => setIdNum(e.currentTarget.value)}
-                                                    size="xs"
+                                                    size="sm"
                                                     radius="xl"
                                                     required
                                                     mb="md"
@@ -156,7 +156,7 @@ const LoginPage = () => {
                                                     placeholder="Your password"
                                                     value={password}
                                                     onChange={(e) => setPassword(e.currentTarget.value)}
-                                                    size="xs"
+                                                    size="sm"
                                                     radius="xl"
                                                     required
                                                     mt="md"

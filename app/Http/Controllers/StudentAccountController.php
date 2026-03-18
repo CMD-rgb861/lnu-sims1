@@ -162,6 +162,8 @@ class StudentAccountController extends Controller
             foreach ($profileFields as $field) {
                 if (isset($data[$field])) {
                     $studentProfile->$field = $data[$field];
+                    $studentProfile->has_committed = 1;
+                    $studentProfile->profile_updated = 1;
                 }
             }
 

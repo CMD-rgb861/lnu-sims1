@@ -7,8 +7,10 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CollegeController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EducBackgroundController;
+use App\Http\Controllers\EnrollmentDetailController;
 use App\Http\Controllers\FamBackgroundController;
 use App\Http\Controllers\NationalityController;
+use App\Http\Controllers\PreEnrollmentController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\PSGCController;
 use App\Http\Controllers\StudentAccountController;
@@ -20,15 +22,20 @@ Route::post('/', [AuthController::class, 'index']);
 Route::post('/employee-login', [AuthController::class, 'employeeLogin']);
 Route::post('/student-login', [AuthController::class, 'studentLogin']);
 
+// Authentication routes
+Route::prefix('/auth/')->name('auth.')->group(function() {
+    Route::post('/verify', [AuthController::class, 'verifyAccount'])->name('verifyAccount');
+});
+
 // Protected routes (must be logged in)
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
 
-    //NATIONALITY ROUTES
+    // NATIONALITY ROUTES //
     Route::get('/nationalities', [NationalityController::class, 'fetchNationalities']);
 
-    //PSGC ROUTES
+    // PSGC ROUTES //
     Route::prefix('/psgc/')->name('psgc.')->group(function() {
         Route::get('/regions', [PSGCController::class, 'fetchRegions'])->name('fetchRegions');
         Route::get('/provinces/{regionId}', [PSGCController::class, 'fetchProvinces'])->name('fetchProvinces');
@@ -36,12 +43,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/barangays/{municipalityId}', [PSGCController::class, 'fetchBarangays'])->name('fetchBarangays');
     });
 
-    //USER ROLES ROUTES
+    // USER ROLES ROUTES //
     Route::prefix('/ur/')->name('user_role.')->group(function() {
         Route::get('/data', [UserRoleController::class, 'data'])->name('data');
     });
 
-    //COLLEGES ROUTES
+    // COLLEGES ROUTES //
     Route::prefix('/c/')->name('colleges.')->group(function() {
         Route::get('/data', [CollegeController::class, 'data'])->name('data');
     });
@@ -51,17 +58,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/data', [DepartmentController::class, 'data'])->name('data');
     });
 
-    //PROGRAMS ROUTES
+    // PROGRAMS ROUTES //
     Route::prefix('/p/')->name('programs.')->group(function() {
         Route::get('/data', [ProgramController::class, 'data'])->name('data');
+        Route::get('/programs', [ProgramController::class, 'fetchPrograms'])->name('fetchPrograms');
     });
 
-    //USER ROLES ROUTES
+    // USER ROLES ROUTES //
     Route::prefix('/ur/')->name('user_role.')->group(function() {
         Route::get('/data', [UserRoleController::class, 'data'])->name('data');
     });
 
-    //USER MANAGEMENT ROUTES
+    // USER MANAGEMENT ROUTES //
     Route::prefix('/um/')->name('user_management.')->group(function() {
         Route::prefix('/employees/')->name('employees.')->group(function() {
              Route::get('/data', [UserAccountController::class, 'fetchEmployeeAccounts'])->name('fetchEmployeeAccounts');
@@ -99,7 +107,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //* STUDENT ACCOUNT ROUTES *//
 
-    //MY PROFILE ROUTES
+    // MY PROFILE ROUTES //
     Route::prefix('/mp/')->name('my_profile.')->group(function() {
         Route::get('/fetch/student-details/{id}', [StudentAccountController::class, 'fetchStudentAccountDetails'])->name('fetchStudentAccountDetails');
         Route::get('/fetch/educ-background/{id}', [EducBackgroundController::class, 'fetchEducationalBackground'])->name('fetchEducationalBackground');
@@ -111,11 +119,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/create-profile', [StudentAccountController::class, 'createStudentProfile'])->name('createStudentProfile');
         Route::put('/update-personal-info', [StudentAccountController::class, 'updateStudentProfileInfo'])->name('updateStudentProfileInfo');
         Route::put('/update-educ-background/{id}', [EducBackgroundController::class, 'updateEducationalBackground'])->name('updateEducationalBackground');
+        Route::put('/update-guardian/{id}', [FamBackgroundController::class, 'updateGuardian'])->name('updateGuardian');
         Route::delete('/delete-educ-background/{id}', [EducBackgroundController::class, 'deleteEducationalBackground'])->name('deleteEducationalBackground');
         Route::put('/update-fam-background/{id}', [FamBackgroundController::class, 'updateFamBackground'])->name('updateFamBackground');
         Route::delete('/delete-fam-background/{id}', [FamBackgroundController::class, 'deleteFamBackground'])->name('deleteFamBackground');
     });
 
-    // CATCH ALL ROUTES
+    // PRE-ENROLLMENT ROUTES //
+    Route::prefix('/pe/')->name('pre_enrollment.')->group(function() {
+        // PRE-ENROLLMENT ROUTES FOR STUDENT ACCOUNT //
+        Route::prefix('/s/')->name('student.')->group(function() {
+            Route::get('/update-enrollment-details/{id}', [EnrollmentDetailController::class, 'fetchStudentAccountDetails'])->name('fetchStudentAccountDetails');
+        }); 
+    });
     
 });

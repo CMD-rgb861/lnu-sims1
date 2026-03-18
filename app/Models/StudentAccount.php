@@ -19,6 +19,7 @@ class StudentAccount extends Authenticatable
         'temp_password',
         'user_type_id',
         'profile_verified',
+        'is_logged_in',
         'last_login'
     ];
 
