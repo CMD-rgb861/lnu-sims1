@@ -14,6 +14,7 @@ use App\Providers\UserLogsProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
@@ -141,43 +142,53 @@ class EnrollmentDetailController extends Controller
     //     return view('pages.students.status_monitoring.status_monitoring_layout', compact('enrollmentDetail', 'steps'));
     // }
 
-    // // Fetch pre-enrollment details 
-    // public function fetchPreEnrollmentDetails()
-    // {
-    //     $studentAccount = '';
+    // Fetch pre-enrollment details 
+    public function fetchPreEnrollmentDetails($targetId)
+    {
+        $activeSchoolYear = Cache::remember('active_school_year', 86400, function () {
+            return SchoolYear::where('is_active', 1)->first();
+        });
 
-    //     if (Auth::guard('student')->check()) {
-    //         $studentAccount = Auth::guard('student')->user();
-    //     }
+        if (!$activeSchoolYear) {
+            return response()->json(['message' => 'No active school year found.'], 404);
+        }
 
-    //     $studentId = $studentAccount->id;
+        $activeSchoolYearId = $activeSchoolYear->id;
 
-    //     $activeSchoolYear = SchoolYear::where('is_active', 1)->first();
-    //     $activeSchoolYearId = $activeSchoolYear->id;
+        $previousEnrollments = EnrollmentDetail::with(['school_year', 'program'])
+            ->where('student_account_id', $targetId)
+            ->where('school_year_id', '!=', $activeSchoolYearId)
+            ->orderBy('school_year_id', 'desc')
+            ->get();
 
-    //     $previousEnrollments = EnrollmentDetail::where('student_account_id', $studentId)
-    //                                           ->where('school_year_id', '!=', $activeSchoolYearId)
-    //                                           ->orderBy('school_year_id', 'desc')
-    //                                           ->get();
-                                              
-    //     $currentEnrollment = EnrollmentDetail::with('schedule_slot')
-    //                                          ->where('school_year_id', $activeSchoolYearId)
-    //                                          ->where('student_account_id', $studentId)
-    //                                          ->first();
+        $currentEnrollment = EnrollmentDetail::with(['school_year', 'program', 'schedule_slot.schedule'])
+            ->where('student_account_id', $targetId)
+            ->where('school_year_id', $activeSchoolYearId)
+            ->first();
 
-    //     $firstScheduleSlot = $currentEnrollment?->schedule_slot?->first();
-    //     $enrollmentSchedule = $firstScheduleSlot?->schedule?->schedule_date?->format('F j, Y') ?? 'TBA';
-    //     $enrollmentScheduleTime = $firstScheduleSlot?->formatted_schedule_time ?? 'TBA';
+        $enrollmentSchedule = 'TBA';
+        $enrollmentScheduleTime = 'TBA';
+        $rescheduled = false;
 
-    //     $schoolYears = SchoolYear::orderBy('id', 'desc')
-    //                     ->get();
+        if ($currentEnrollment && $currentEnrollment->schedule_slot->isNotEmpty()) {
+            $firstScheduleSlot = $currentEnrollment->schedule_slot->first();
+            
+            $scheduleDate = optional($firstScheduleSlot->schedule)->schedule_date;
+            $enrollmentSchedule = $scheduleDate ? Carbon::parse($scheduleDate)->format('F j, Y') : 'TBA';
+            
+            $enrollmentScheduleTime = $firstScheduleSlot->formatted_schedule_time ?? 'TBA';
+            $rescheduled = $firstScheduleSlot->reschedule_status == 1;
+        }
 
-    //     $programs = Program::where('status', '!=', 1)
-    //                     ->get();
-
-    //     return view('pages.students.pre_enrollment.pre_enrollment_layout', compact('previousEnrollments', 'currentEnrollment', 'schoolYears', 
-    //                 'programs', 'enrollmentSchedule', 'enrollmentScheduleTime'));
-    // }
+        // 5. Return clean JSON to React
+        return response()->json([
+            'currentEnrollment'      => $currentEnrollment,
+            'previousEnrollments'    => $previousEnrollments,
+            'rescheduled'            => $rescheduled,
+            'enrollmentSchedule'     => $enrollmentSchedule,
+            'enrollmentScheduleTime' => $enrollmentScheduleTime,
+        ]);
+    }
 
     // public function showEnrollmentUpdate()
     // {
@@ -213,7 +224,7 @@ class EnrollmentDetailController extends Controller
     //     return view('pages.students.pre_enrollment.pre_enrollment_previous_records', compact('previousEnrollments'));
     // }
 
-    // Create enrollment data
+    // Create enrollment data for the current semester
     public function createEnrollmentDetail(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -269,20 +280,15 @@ class EnrollmentDetailController extends Controller
                 'My Profile'
             );
 
-            return redirect()->route('student.dashboard.index')->with('toast', [
-                'text' => 'Enrollment detail successfully updated!',
-                'type' => 'success',
-            ]);
-
             return response()->json([
-                'text' => 'Enrollment detail successfully updated!',
+                'message' => 'Enrollment detail successfully updated!',
                 'type' => 'success',
             ], 200);
 
         }catch(\Exception $e){
             DB::rollBack();
             return response()->json([
-                'text' => 'Failed updating enrollment detail.' . $e->getMessage(),
+                'message' => 'Failed updating enrollment detail.' . $e->getMessage(),
                 'type' => 'error',
             ], 500);
         }

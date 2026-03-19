@@ -62,6 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('/p/')->name('programs.')->group(function() {
         Route::get('/data', [ProgramController::class, 'data'])->name('data');
         Route::get('/programs', [ProgramController::class, 'fetchPrograms'])->name('fetchPrograms');
+        Route::get('/program-levels', [ProgramController::class, 'fetchProgramLevels'])->name('fetchProgramLevels');
     });
 
     // USER ROLES ROUTES //
@@ -129,7 +130,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('/pe/')->name('pre_enrollment.')->group(function() {
         // PRE-ENROLLMENT ROUTES FOR STUDENT ACCOUNT //
         Route::prefix('/s/')->name('student.')->group(function() {
-            Route::get('/update-enrollment-details/{id}', [EnrollmentDetailController::class, 'fetchStudentAccountDetails'])->name('fetchStudentAccountDetails');
+            Route::get('/fetch/records/{id}', [EnrollmentDetailController::class, 'fetchPreEnrollmentDetails'])->name('fetchPreEnrollmentDetails');
+            Route::post('/update-enrollment-details', [EnrollmentDetailController::class, 'createEnrollmentDetail'])->name('createEnrollmentDetail');
         }); 
     });
     

@@ -42,7 +42,7 @@ const sidebarLinks = [
     icon: IconSchool,
     initiallyOpened: false,
     links: [
-      { label: 'Pre-Enrollment Records', link: '/cr/blotters'},
+      { label: 'Pre-Enrollment Records', link: '/pe/records'},
       { label: 'Status Monitoring', link: '/cr/profiling'},
       { label: 'Advised Subjects', link: '/cr/profiling'},
       { label: 'Enrollment Schedule', link: '/cr/profiling'},

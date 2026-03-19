@@ -46,14 +46,14 @@
 }
 
 .mantine-NavLink-root:where([data-active], [aria-current='page']){
-  background-color: light-dark(var(--mantine-color-myColor-0), var(--mantine-color-dark-8));
+  background-color: light-dark(var(--mantine-color-myColor-0), var(--mantine-color-dark-9));
   border-radius: 30px;
   font-weight: 600;
   color: light-dark(var(--mantine-color-myColor-9), var(--mantine-color-dark-1));
 }
 
 .mantine-NavLink-root:hover{
-  background-color: light-dark(var(--mantine-color-myColor-0), var(--mantine-color-dark-8));
+  background-color: light-dark(var(--mantine-color-myColor-0), var(--mantine-color-dark-9));
   color: light-dark(var(--mantine-color-myColor-9), var(--mantine-color-dark-1));
   border-radius: 30px;
 }
@@ -72,7 +72,7 @@
 }
 
 .mantine-NavLink-children .mantine-NavLink-root{
-  border-left: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-5));
+  border-left: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-6));
   margin: 0px; 
 }
 

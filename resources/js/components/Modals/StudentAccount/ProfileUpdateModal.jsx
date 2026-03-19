@@ -147,7 +147,7 @@ const ProfileUpdateModal = ({ user, opened, onClose }) => {
 
     useEffect(() => {
         if (opened) {
-            axiosClient.get('/api/psgc/regions') // UPDATE ROUTE
+            axiosClient.get('/api/psgc/regions') 
                 .then(res => {
                     const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
                     setRegions(data);

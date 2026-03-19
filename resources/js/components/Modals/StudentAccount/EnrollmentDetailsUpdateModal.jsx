@@ -25,13 +25,6 @@ const getYearLevelLabel = (level) => {
     return "4th Year";
 };
 
-const getEnrollmentType = (type) => {
-    if (type === 1 || type === "1") return "New/Freshmen Student";
-    if (type === 2 || type === "2") return "Continuing Student";
-    if (type === 3 || type === "3") return "Shiftee/Returnee";
-    return "Transferee";
-};
-
 const EnrollmentDetailsUpdateModal = ({ 
     opened, 
     onSubmit, 
@@ -39,21 +32,30 @@ const EnrollmentDetailsUpdateModal = ({
     activeSchoolYear, 
     previousEnrollment, 
     programs,
+    programLevels,
     onLogout
 }) => {
     
     const form = useForm({
         initialValues: {
+            program_level_id: '',
             program_id: '',
             year_level: '',
             enrollment_type: '',
         },
         validate: {
+            program_level_id: (value) => (!value ? 'Please select a level' : null), 
             program_id: (value) => (!value ? 'Please select a program' : null),
             year_level: (value) => (!value ? 'Please select a year level' : null),
             enrollment_type: (value) => (!value ? 'Please select an enrollment type' : null),
         },
     });
+
+    const selectedLevelId = form.values.program_level_id;
+
+    const filteredPrograms = programs?.filter(
+        (p) => p.program_level_id?.toString() === selectedLevelId
+    ) || [];
 
     const handleSubmit = (values) => {
         onSubmit(values);
@@ -78,10 +80,10 @@ const EnrollmentDetailsUpdateModal = ({
                     <Box>
                         {activeSchoolYear ? (
                             <>
-                                <Text size="xl" fw={800} style={{ letterSpacing: '-1px' }}>
+                                <Text size="xl" fw={800} >
                                     S.Y. {activeSchoolYear.school_year_from} - {activeSchoolYear.school_year_to}
                                 </Text>
-                                <Text size="lg" fw={500} style={{ letterSpacing: '-1px' }}>
+                                <Text size="lg" fw={400} c="dimmed">
                                     {getSemesterLabel(activeSchoolYear.semester)}
                                 </Text>
                             </>
@@ -93,8 +95,8 @@ const EnrollmentDetailsUpdateModal = ({
                     </Box>
 
                     {/* Instructions Alert */}
-                    <Alert variant="light" color="gray" icon={<IconInfoCircle />} title="Instructions:">
-                        <Text size="sm">
+                    <Alert variant="light" color="gray" icon={<IconInfoCircle />} title="Instructions:" radius="lg"> 
+                        <Text size="xs">
                             Please update your enrollment details for this semester. Ensure that the selected program and year level is correct.
                         </Text>
                     </Alert>
@@ -111,22 +113,39 @@ const EnrollmentDetailsUpdateModal = ({
                             </Text>
                         </Alert>
                     ) : (
-                        <Group gap="xs" px="sm">
-                            <IconX size={16} color="gray" />
-                            <Text size="sm" c="dimmed">No previous enrollment records found.</Text>
-                        </Group>
+                        <Alert variant="light" color="red" icon={<IconX />} title="Previous Enrollment Details:" radius="lg">
+                            <Text fz="xs" c="red" >No previous enrollment records found.</Text>
+                        </Alert>
                     )}
 
                     {/* Form Fields */}
+
+                    <Select
+                        withAsterisk
+                        label="Level"
+                        placeholder="Select Level"
+                        data={programLevels?.map(pl => ({
+                            value: pl.id.toString(),
+                            label: pl.name
+                        })) || []}
+                        searchable
+                        {...form.getInputProps('program_level_id')}
+                        onChange={(value) => {
+                            form.getInputProps('program_level_id').onChange(value);
+                            form.setFieldValue('program_id', ''); 
+                        }}
+                    />
+
                     <Select
                         withAsterisk
                         label="Program"
-                        placeholder="Select Program"
-                        data={programs?.map(p => ({
+                        placeholder={selectedLevelId ? "Select Program" : "Please select a level first"}
+                        data={filteredPrograms?.map(p => ({
                             value: p.id.toString(),
                             label: p.program_name
                         })) || []}
                         searchable
+                        disabled={!selectedLevelId}
                         {...form.getInputProps('program_id')}
                     />
 

@@ -19,6 +19,7 @@ import PersonalInformationPage from './pages/StudentAccount/MyProfile/PersonalIn
 import EducationalBackgroundPage from './pages/StudentAccount/MyProfile/EducationalBackgroundPage';
 import FamilyBackgroundPage from './pages/StudentAccount/MyProfile/FamilyBackgroundPage';
 import Error404Page from './pages/Errors/Error404Page';
+import PreEnrollmentRecordsPage from './pages/StudentAccount/PreEnrollment/PreEnrollmentRecordsPage';
 
 function App() {
     const dispatch = useDispatch();
@@ -83,6 +84,8 @@ function App() {
                         <Route path="/mp/personal-information" element={<PersonalInformationPage />} />
                         <Route path="/mp/educational-background" element={<EducationalBackgroundPage />} />
                         <Route path="/mp/family-background" element={<FamilyBackgroundPage />} />
+
+                        <Route path="/pe/records" element={<PreEnrollmentRecordsPage />} />
 
                         {/* --- PROTECTED ROUTES FOR EMPLOYEE ACCOUNTs --- */}
                         <Route path="/um/employees" element={<EmployeeAccountsPage />} />

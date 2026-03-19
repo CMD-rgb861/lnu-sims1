@@ -10,11 +10,10 @@ use App\Providers\UserLogsProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Yajra\DataTables\Facades\DataTables;
-
+use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class ProgramController extends Controller
 {
@@ -29,6 +28,22 @@ class ProgramController extends Controller
                           ->get();
         });
         return response()->json($programs);
+    }
+
+    // Fetch program levels for dropdown
+    public function fetchProgramLevels()
+    {
+        $programsLevels = Cache::remember('program_levels_dropdown', 86400, function () {
+            return DB::table('program_levels')->select('id', 'name', 'period')
+                            ->where('period', '=', 'sem')
+                            ->orderBy('order', 'asc')
+                            ->get()
+                            ->map(function ($item) {
+                                $item->name = Str::ucfirst(Str::lower($item->name));
+                                return $item;
+                            });
+        });
+        return response()->json($programsLevels);
     }
 
     // // Show programs index

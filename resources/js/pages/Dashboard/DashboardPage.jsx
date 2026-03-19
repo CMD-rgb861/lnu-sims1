@@ -17,6 +17,7 @@ const DashboardPage = () => {
     // 1. Move ALL hooks inside the component body
     const { user, user_type, user_role_level } = useSelector((state) => state.auth);
     const [programs, setPrograms] = useState([]);
+    const [programLevels, setProgramLevels] = useState([]);
 
     const [profileUpdateModalOpened, { open: openProfileUpdateModal, close: closeProfileUpdateModal }] = useDisclosure(false);
     const [setPasswordModalOpened, { open: openSetPasswordModal, close: closeSetPasswordModal }] = useDisclosure(false);
@@ -40,6 +41,15 @@ const DashboardPage = () => {
         }
     };
 
+    const fetchProgramLevels = async () => {
+        try {
+            const response = await axiosClient.get('/api/p/program-levels'); 
+            setProgramLevels(response.data);
+        } catch (error) {
+            console.error("Failed to fetch program levels:", error);
+        }
+    };
+
     useEffect(() => {
         if (!user) return;
 
@@ -57,6 +67,7 @@ const DashboardPage = () => {
         }
 
         if (isStudent && hasEnrollmentDetails === false) {
+            fetchProgramLevels();
             fetchPrograms();
             openEnrollmentUpdateModal();
         } else {
@@ -91,6 +102,7 @@ const DashboardPage = () => {
             console.error("Failed to update enrollment details", error);
         } finally {
             setIsSubmitting(false);
+            closeEnrollmentUpdateModal();
         }
     };
 
@@ -150,6 +162,7 @@ const DashboardPage = () => {
                     activeSchoolYear={user?.active_school_year}
                     previousEnrollment={null} 
                     programs={programs}
+                    programLevels={programLevels}
                     onLogout={handleLogout}     
                 />
             </>
