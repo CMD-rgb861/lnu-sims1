@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
-import { Paper, Title, Grid, SimpleGrid, Text, Center, Badge, Divider, Alert, Stack, Group, Box, Button, Anchor, Breadcrumbs, Skeleton, LoadingOverlay, Select, useMantineColorScheme } from '@mantine/core';
+import { Paper, Title, Grid, SimpleGrid, Text, Center, Badge, Divider, Alert, Stack, Group, Box, Button, Anchor, Breadcrumbs, Skeleton, LoadingOverlay, Select, Card, useMantineColorScheme } from '@mantine/core';
 import { IconAlertCircle, IconCheck, IconCalendar, IconClock, IconArrowUpRight, IconSchool, IconUser, IconFilter } from '@tabler/icons-react';
 
 import axiosClient from '../../../api/axiosClient';
@@ -141,6 +141,90 @@ const PreEnrollmentRecordsPage = () => {
                             </Paper>
                         </Grid.Col>
                     </Grid>
+
+                    <Title align="left" order={4} mb="md" fw={600} fz="md">
+                        Previous Pre-Enrollment Records
+                    </Title>
+
+                    {/* Filters */}
+                    <Grid align="center" mb="xl">
+                        <Grid.Col span="content">
+                            <Text fw={500} fz="sm" c="dimmed"><IconFilter size={14}/>  Filter by:</Text>
+                        </Grid.Col>
+                        <Grid.Col span={{ base: 12, md: 3 }}>
+                            <Select
+                                placeholder="By School Year/Semester"
+                                size="sm"
+                                data={[
+                                    { value: 'all', label: 'Show All' },
+                                    ...previousEnrollments.map(pe => ({
+                                        value: pe.school_year.id.toString(),
+                                        label: `S.Y. ${pe.school_year.school_year_from}-${pe.school_year.school_year_to} - ${getSemester(pe.school_year.semester)}`
+                                    }))
+                                ]}
+                                value={yearFilter}
+                                onChange={setYearFilter}
+                                clearable
+                            />
+                        </Grid.Col>
+                        <Grid.Col span={{ base: 12, md: 3 }}>
+                            <Select
+                                placeholder="By Academic Standing"
+                                size="sm"
+                                data={[
+                                    { value: 'all', label: 'Show All' },
+                                    { value: '1', label: 'Regular Student' },
+                                    { value: '2', label: 'Irregular Student' },
+                                ]}
+                                value={standingFilter}
+                                onChange={setStandingFilter}
+                                clearable
+                            />
+                        </Grid.Col>
+                    </Grid>
+
+                    <SimpleGrid cols={{ base: 1, md: 2, lg: 3 }} spacing="lg">
+                        <Card withBorder radius="lg" p="md">
+                            {/* Top Image Replacement: Blue Gradient Section */}
+                            <Card.Section 
+                                h={100} 
+                                style={{ 
+                                    backgroundImage: 'linear-gradient(135deg, #ffffff 0%, rgb(225, 225, 225)100%)' 
+                                }} 
+                            >
+                                <Group p="lg">
+                                    <Skeleton height={60} width="40%" mb="md" radius="md" opacity={0.3}/>
+                                </Group>
+                            </Card.Section>
+                
+                            {/* Middle Section: Main Info */}
+                            <Group mt="md" wrap="nowrap">
+                                <IconSchool size={20} stroke={1.5} style={{ color: 'var(--mantine-color-dimmed)' }} />
+                                <Skeleton height={20} width="40%" mb="md" radius="md" />
+                            </Group>
+
+                            <Skeleton height={20} width="40%" mb="md" radius="md" />
+                
+                            {/* Bottom Footer Section: 3-Column Stats (Matching the image style) */}
+                            <Card.Section inheritPadding mt="sm" pb="md">
+                                <Divider my="sm" />
+                                <SimpleGrid cols={3}>
+                                    <Box>
+                                        <Text fz="xs" c="dimmed" fw={400} mb={2}>Year Level</Text>
+                                        <Skeleton height={10} width="40%" mb="md" radius="md" />
+                                    </Box>
+                                    <Box>
+                                        <Text fz="xs" c="dimmed" fw={400} mb={2}>Type</Text>
+                                        <Skeleton height={10} width="40%" mb="md" radius="md" />
+                                    </Box>
+                                    <Box>
+                                        <Text fz="xs" c="dimmed" fw={400} mb={2}>Acad. Standing</Text>
+                                        <Skeleton height={10} width="40%" mb="md" radius="md" />
+                                    </Box>
+                                </SimpleGrid>
+                            </Card.Section>
+                        </Card>
+                    </SimpleGrid>
                 </Grid.Col>
             </Grid>
         );

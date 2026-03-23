@@ -131,6 +131,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // PRE-ENROLLMENT ROUTES FOR STUDENT ACCOUNT //
         Route::prefix('/s/')->name('student.')->group(function() {
             Route::get('/fetch/records/{id}', [EnrollmentDetailController::class, 'fetchPreEnrollmentDetails'])->name('fetchPreEnrollmentDetails');
+            Route::get('/fetch/status-monitoring/{id}', [EnrollmentDetailController::class, 'fetchStatusMonitoring'])->name('fetchStatusMonitoring');
+            Route::get('/fetch/advised-subjects/{id}', [EnrollmentDetailController::class, 'fetchAdvisedSubjects'])->name('fetchAdvisedSubjects');
             Route::post('/update-enrollment-details', [EnrollmentDetailController::class, 'createEnrollmentDetail'])->name('createEnrollmentDetail');
         }); 
     });

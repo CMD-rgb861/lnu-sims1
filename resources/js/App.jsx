@@ -20,6 +20,8 @@ import EducationalBackgroundPage from './pages/StudentAccount/MyProfile/Educatio
 import FamilyBackgroundPage from './pages/StudentAccount/MyProfile/FamilyBackgroundPage';
 import Error404Page from './pages/Errors/Error404Page';
 import PreEnrollmentRecordsPage from './pages/StudentAccount/PreEnrollment/PreEnrollmentRecordsPage';
+import StatusMonitoringPage from './pages/StudentAccount/PreEnrollment/StatusMonitoringPage';
+import AdvisedSubjectsPage from './pages/StudentAccount/PreEnrollment/AdvisedSubjectsPage';
 
 function App() {
     const dispatch = useDispatch();
@@ -86,6 +88,8 @@ function App() {
                         <Route path="/mp/family-background" element={<FamilyBackgroundPage />} />
 
                         <Route path="/pe/records" element={<PreEnrollmentRecordsPage />} />
+                        <Route path="/pe/status-monitoring" element={<StatusMonitoringPage />} />
+                        <Route path="/pe/advised-subjects" element={<AdvisedSubjectsPage />} />
 
                         {/* --- PROTECTED ROUTES FOR EMPLOYEE ACCOUNTs --- */}
                         <Route path="/um/employees" element={<EmployeeAccountsPage />} />

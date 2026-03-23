@@ -21,6 +21,8 @@ class SchoolYear extends Model
         'is_active' => 'boolean',
     ];
 
+    protected $appends = ['display_name'];
+
     public function getDisplayNameAttribute()
     {
         $semesterName = match ($this->semester) {

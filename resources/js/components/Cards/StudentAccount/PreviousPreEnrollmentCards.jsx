@@ -43,19 +43,44 @@ const getAcadStanding = (val) => {
     return { label: 'Pending', color: 'gray' };
 };
 
+const getAcronym = (name) => {
+    if (!name) return 'N/A';
+    const ignoredWords = ['of', 'in', 'and', 'the', 'for']; 
+    return name
+        .split(' ')
+        .filter(word => !ignoredWords.includes(word.toLowerCase()))
+        .map(word => word.charAt(0))
+        .join('')
+        .toUpperCase();
+};
+
 // --- Single Card Component ---
 const RecordCard = ({ record }) => {
     const acadStanding = getAcadStanding(record.acad_standing);
 
     return (
-        <Card withBorder radius="md" p="md">
+        <Card withBorder radius="lg" p="md">
             {/* Top Image Replacement: Blue Gradient Section */}
             <Card.Section 
                 h={100} 
                 style={{ 
-                    backgroundImage: 'linear-gradient(135deg, rgb(77, 169, 255) 0%, #0471ff 100%)' 
+                    backgroundImage: 'linear-gradient(135deg, #0471ff 0%, rgb(77, 169, 255)100%)' 
                 }} 
-            />
+            >
+                <Group p="lg">
+                    <Text 
+                        fz={50} 
+                        fw={300} 
+                        c="white" 
+                        style={{ 
+                            opacity: 0.3, 
+                        }}
+                    >
+                        {/* If your DB has an acronym column, use it here. Otherwise, use the helper: */}
+                        {record.program?.program_acronym || getAcronym(record.program?.program_name)}
+                    </Text>
+                </Group>
+            </Card.Section>
 
             {/* Middle Section: Main Info */}
             <Group mt="md" wrap="nowrap">
@@ -77,15 +102,17 @@ const RecordCard = ({ record }) => {
                 <SimpleGrid cols={3}>
                     <Box>
                         <Text fz="xs" c="dimmed" fw={400} mb={2}>Year Level</Text>
-                        <Text fw={600} fz="sm">{getYearLevel(record.year_level)}</Text>
+                        <Text fw={600} fz="xs">{getYearLevel(record.year_level)}</Text>
                     </Box>
                     <Box>
                         <Text fz="xs" c="dimmed" fw={400} mb={2}>Type</Text>
-                        <Text fw={600} fz="sm">{getEnrollmentType(record.enrollment_type)}</Text>
+                        <Text fw={600} fz="xs">{getEnrollmentType(record.enrollment_type)}</Text>
                     </Box>
                     <Box>
-                        <Text fz="xs" c="dimmed" fw={400} mb={2}>Standing</Text>
-                        <Text fw={600} fz="sm" c={acadStanding.color}>{acadStanding.label}</Text>
+                        <Text fz="xs" c="dimmed" fw={400} mb={2}>Acad. Standing</Text>
+                        <Badge color={acadStanding.color} size="sm" radius="sm" variant="light">
+                            {acadStanding.label}
+                        </Badge>
                     </Box>
                 </SimpleGrid>
             </Card.Section>

@@ -43,8 +43,8 @@ const sidebarLinks = [
     initiallyOpened: false,
     links: [
       { label: 'Pre-Enrollment Records', link: '/pe/records'},
-      { label: 'Status Monitoring', link: '/cr/profiling'},
-      { label: 'Advised Subjects', link: '/cr/profiling'},
+      { label: 'Status Monitoring', link: '/pe/status-monitoring'},
+      { label: 'Advised Subjects', link: '/pe/advised-subjects'},
       { label: 'Enrollment Schedule', link: '/cr/profiling'},
     ],
   },
