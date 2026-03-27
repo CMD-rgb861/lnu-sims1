@@ -22,6 +22,7 @@ import Error404Page from './pages/Errors/Error404Page';
 import PreEnrollmentRecordsPage from './pages/StudentAccount/PreEnrollment/PreEnrollmentRecordsPage';
 import StatusMonitoringPage from './pages/StudentAccount/PreEnrollment/StatusMonitoringPage';
 import AdvisedSubjectsPage from './pages/StudentAccount/PreEnrollment/AdvisedSubjectsPage';
+import EnrollmentSchedulePage from './pages/StudentAccount/PreEnrollment/EnrollmentSchedulePage';
 
 function App() {
     const dispatch = useDispatch();
@@ -90,6 +91,7 @@ function App() {
                         <Route path="/pe/records" element={<PreEnrollmentRecordsPage />} />
                         <Route path="/pe/status-monitoring" element={<StatusMonitoringPage />} />
                         <Route path="/pe/advised-subjects" element={<AdvisedSubjectsPage />} />
+                        <Route path="/pe/enrollment-schedule" element={<EnrollmentSchedulePage />} />
 
                         {/* --- PROTECTED ROUTES FOR EMPLOYEE ACCOUNTs --- */}
                         <Route path="/um/employees" element={<EmployeeAccountsPage />} />

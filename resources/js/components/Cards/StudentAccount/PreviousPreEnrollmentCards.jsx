@@ -76,7 +76,6 @@ const RecordCard = ({ record }) => {
                             opacity: 0.3, 
                         }}
                     >
-                        {/* If your DB has an acronym column, use it here. Otherwise, use the helper: */}
                         {record.program?.program_acronym || getAcronym(record.program?.program_name)}
                     </Text>
                 </Group>

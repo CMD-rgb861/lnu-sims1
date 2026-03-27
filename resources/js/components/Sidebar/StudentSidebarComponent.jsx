@@ -45,7 +45,7 @@ const sidebarLinks = [
       { label: 'Pre-Enrollment Records', link: '/pe/records'},
       { label: 'Status Monitoring', link: '/pe/status-monitoring'},
       { label: 'Advised Subjects', link: '/pe/advised-subjects'},
-      { label: 'Enrollment Schedule', link: '/cr/profiling'},
+      { label: 'Enrollment Schedule', link: '/pe/enrollment-schedule'},
     ],
   },
   { label: 'Grades', icon: IconChalkboardTeacher, link: '/al'},

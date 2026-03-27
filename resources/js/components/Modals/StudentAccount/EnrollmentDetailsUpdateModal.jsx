@@ -104,12 +104,11 @@ const EnrollmentDetailsUpdateModal = ({
                     {/* Previous Enrollment Details */}
                     {previousEnrollment ? (
                         <Alert variant="light" color="blue" icon={<IconInfoCircle />} title="Previous Enrollment Details:">
-                            <Divider my="sm" color="blue.2" />
-                            <Text size="sm" fw={600}>
-                                Program: <Text component="span" fw={400}>{previousEnrollment.program?.program_name}</Text>
+                            <Text size="sm" fw={600} fz="xs">
+                                Program: <Text component="span" fw={400} fz="xs">{previousEnrollment.program?.program_name}</Text>
                             </Text>
-                            <Text size="sm" fw={600}>
-                                Year Level: <Text component="span" fw={400}>{getYearLevelLabel(previousEnrollment.year_level)}</Text>
+                            <Text size="sm" fw={600} fz="xs">
+                                Year Level: <Text component="span" fw={400} fz="xs">{getYearLevelLabel(previousEnrollment.year_level)}</Text>
                             </Text>
                         </Alert>
                     ) : (

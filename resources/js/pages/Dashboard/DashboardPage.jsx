@@ -17,6 +17,7 @@ const DashboardPage = () => {
     // 1. Move ALL hooks inside the component body
     const { user, user_type, user_role_level } = useSelector((state) => state.auth);
     const [programs, setPrograms] = useState([]);
+    const [previousEnrollment, setPreviousEnrollment] = useState([]);
     const [programLevels, setProgramLevels] = useState([]);
 
     const [profileUpdateModalOpened, { open: openProfileUpdateModal, close: closeProfileUpdateModal }] = useDisclosure(false);
@@ -50,6 +51,15 @@ const DashboardPage = () => {
         }
     };
 
+    const fetchPreviousRecords = async () => {
+        try {
+            const response = await axiosClient.get(`/api/pe/s/fetch/records/${user.id}`); 
+            setPreviousEnrollment(response.data.previousEnrollments);
+        } catch (error) {
+            console.error("Failed to fetch programs:", error);
+        }
+    };
+
     useEffect(() => {
         if (!user) return;
 
@@ -67,6 +77,7 @@ const DashboardPage = () => {
         }
 
         if (isStudent && hasEnrollmentDetails === false) {
+            fetchPreviousRecords();
             fetchProgramLevels();
             fetchPrograms();
             openEnrollmentUpdateModal();
@@ -160,7 +171,7 @@ const DashboardPage = () => {
                     onSubmit={handleEnrollmentSubmit}
                     isSubmitting={isSubmitting}
                     activeSchoolYear={user?.active_school_year}
-                    previousEnrollment={null} 
+                    previousEnrollment={previousEnrollment} 
                     programs={programs}
                     programLevels={programLevels}
                     onLogout={handleLogout}     
