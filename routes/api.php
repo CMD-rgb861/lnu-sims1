@@ -134,9 +134,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/fetch/records/{id}', [EnrollmentDetailController::class, 'fetchPreEnrollmentDetails'])->name('fetchPreEnrollmentDetails');
             Route::get('/fetch/status-monitoring/{id}', [EnrollmentDetailController::class, 'fetchStatusMonitoring'])->name('fetchStatusMonitoring');
             Route::get('/fetch/advised-subjects/{id}', [EnrollmentDetailController::class, 'fetchAdvisedSubjects'])->name('fetchAdvisedSubjects');
-            Route::get('/fetch/available-schedules', [StudentScheduleController::class, 'availableSchedules'])->name('availableSchedules');;
-            Route::post('/student/enrollment/bookSchedule', [StudentScheduleController::class, 'bookSchedule']);
-            Route::get('/student/enrollment/checkBooking', [StudentScheduleController::class, 'checkBooking']);
+            Route::get('/fetch/available-schedules', [StudentScheduleController::class, 'availableSchedules'])->name('availableSchedules');
+            Route::get('/fetch/check-booking', [StudentScheduleController::class, 'checkBooking']);
+            Route::post('/book-schedule', [StudentScheduleController::class, 'bookSchedule'])->name('bookSchedule');
             Route::post('/update-enrollment-details', [EnrollmentDetailController::class, 'createEnrollmentDetail'])->name('createEnrollmentDetail');
         }); 
     });

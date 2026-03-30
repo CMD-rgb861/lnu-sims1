@@ -19,10 +19,12 @@ import {
     SimpleGrid,
     Modal,
     Table,
-    ActionIcon
+    ActionIcon,
+    List,
+    useMantineColorScheme
 } from '@mantine/core';
 import { 
-    IconCalendarEvent, 
+    IconAlertCircle, 
     IconCheck, 
     IconLock, 
     IconAlertTriangle,
@@ -34,12 +36,11 @@ import {
 import { useAuth } from '../../../hooks/useAuth';
 import axiosClient from '../../../api/axiosClient';
 
-// --- 1. CompactSlot Helper (Styled as a Calendar Event Chip) ---
 const CompactSlot = ({ time, booked, total, onClick, isMyBooking, disabled }) => {
     const [isHovered, setIsHovered] = useState(false);
 
     const isFull = booked >= total;
-    const isInteractable = (!isFull || isMyBooking) && !disabled;
+    const isInteractable = (!isFull && !disabled) && !isMyBooking;
 
     let bgColor = 'teal.6'; 
     if (isMyBooking) bgColor = 'blue.6'; 
@@ -55,30 +56,28 @@ const CompactSlot = ({ time, booked, total, onClick, isMyBooking, disabled }) =>
             onClick={isInteractable ? onClick : undefined}
             bg={bgColor}
             c="white"
-            // Responsive padding: much smaller on mobile
             px={{ base: 4, sm: 8 }}
             py={{ base: 4, sm: 4 }}
             mb={4}
             style={{ 
-                borderRadius: '4px',
+                borderRadius: '6px',
                 cursor: cursor,
                 opacity: disabled ? 0.5 : opacity,
                 borderLeft: isMyBooking ? '3px solid var(--mantine-color-blue-9)' : '3px solid transparent',
                 transform: (isInteractable && isHovered) ? 'scale(1.02)' : 'scale(1)',
                 transition: 'all 0.1s ease-in-out',
                 position: 'relative',
-                zIndex: (isInteractable && isHovered) ? 20 : (isMyBooking ? 10 : 1)
+
             }}
             role="button"
         >
-            {/* DESKTOP VIEW: Shows Time + Fraction/Status */}
             <Group justify="space-between" wrap="nowrap" gap={0} display={{ base: 'none', md: 'flex' }}>
                 <Group gap={4} wrap="nowrap">
                     {isMyBooking && <IconStarFilled size={10} color="white" />}
-                    <Text fw={700} fz="xs" lh={1}>{time}</Text>
+                    <Text fw={700} fz="xs" lh={2}>{time}</Text>
                 </Group>
-                <Text fz={10} lh={1} fw={500} opacity={0.9}>
-                    {isMyBooking ? 'YOURS' : `${booked}/${total}`}
+                <Text fz="xs" lh={2} fw={500} opacity={0.9}>
+                    {isMyBooking ? 'Your Schedule' : `${booked}/${total} slots`}
                 </Text>
             </Group>
 
@@ -86,7 +85,7 @@ const CompactSlot = ({ time, booked, total, onClick, isMyBooking, disabled }) =>
             <Center display={{ base: 'flex', md: 'none' }}>
                 <Group gap={4} wrap="nowrap">
                     {isMyBooking && <IconStarFilled size={10} color="white" />}
-                    <Text fw={700} fz={10} lh={1}>{time}</Text>
+                    <Text fw={700} fz="xs" lh={2}>{time}</Text>
                 </Group>
             </Center>
         </Box>
@@ -97,12 +96,16 @@ const CompactSlot = ({ time, booked, total, onClick, isMyBooking, disabled }) =>
 const EnrollmentSchedulePage = () => {
     const { user } = useAuth();
 
+    const { colorScheme } = useMantineColorScheme();
+    const isDark = colorScheme === 'dark';
+
     if (!user) {
         return <Navigate to="/login" replace />;
     }
 
     const items = [
         { title: 'Home', href: '/dashboard' },
+        { title: 'Pre-Enrollment', href: '#' },
         { title: 'Enrollment Schedule', href: '#' }
     ].map((item, index) => (
         <Anchor component={Link} to={item.href} key={index} fz={14} fw={400}>
@@ -154,7 +157,7 @@ const EnrollmentSchedulePage = () => {
 
     const checkMyBooking = async () => {
         try {
-            const res = await axiosClient.get('/student/enrollment/checkBooking');
+            const res = await axiosClient.get('/api/pe/s/fetch/check-booking');
             if (res.data.exists) {
                 setBookedSchedule({
                     dateStr: res.data.formattedDate, 
@@ -190,7 +193,7 @@ const EnrollmentSchedulePage = () => {
         setError(null);
         
         try {
-            const res = await axiosClient.post('api/pe/s/fetch/available-schedules', {
+            const res = await axiosClient.post('api/pe/s/book-schedule', {
                 schedule_id: selectedSlot.scheduleId,
                 schedule_time: selectedSlot.scheduleTimeCode,
                 date: selectedSlot.date,
@@ -310,7 +313,29 @@ const EnrollmentSchedulePage = () => {
                 <Text fz="xs" fw={500} mb="lg" c="dimmed">
                     Select your preferred date for on-site enrollment.
                 </Text>
-
+                {currentMonthData && (
+                    <Alert 
+                            icon={<IconAlertCircle size={16} />} 
+                            title="Instructions:" 
+                            color="gray" 
+                            variant="light" 
+                            mb="md"
+                            radius="lg"
+                            py="lg"
+                        >
+                            <List size="xs" spacing={5} mt={2}>
+                                <List.Item>
+                                    Click on an available AM or PM slot on the calendar to choose your preferred on-site enrollment schedule.
+                                </List.Item>
+                                <List.Item>
+                                    Clicking an available slot will open a confirmation window. Please review the date and time carefully before confirming.
+                                </List.Item>
+                                <List.Item>
+                                    You may still change schedule as long as slots are still available.
+                                </List.Item>
+                            </List>
+                    </Alert>
+                )}
                 {/* Alerts Section */}
                 <Stack mb="lg">
                     {error && !loading && (
@@ -320,9 +345,9 @@ const EnrollmentSchedulePage = () => {
                     )}
 
                     {bookedSchedule && (
-                        <Alert icon={<IconCheck size={16} />} color="green" radius="md" variant="filled">
+                        <Alert icon={<IconCheck size={16} />} color="green" radius="md" variant="light">
                             <Text fw={600} fz="sm">
-                                Your enrollment schedule is on {bookedSchedule.dateStr} ({bookedSchedule.time})
+                                Your enrollment schedule is set to {bookedSchedule.dateStr} ({bookedSchedule.time})
                             </Text>
                         </Alert>
                     )}
@@ -337,9 +362,9 @@ const EnrollmentSchedulePage = () => {
                 </Stack>
 
                 {/* Professional Calendar Component Area */}
-                <Paper withBorder radius="lg" p={0} shadow="sm" overflow="hidden">
+                <Paper withBorder radius="lg" p={0} overflow="hidden">
                     {/* Calendar Header */}
-                    <Box bg="gray.0" p="md" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
+                    <Box p="md">
                         <Group justify="space-between" align="center">
                             <ActionIcon 
                                 variant="light" 
@@ -352,7 +377,7 @@ const EnrollmentSchedulePage = () => {
                                 <IconChevronLeft size={20} />
                             </ActionIcon>
                             
-                            <Title order={3} fw={700} c="dark.8">
+                            <Title order={3} fw={700}>
                                 {selectedMonth || 'No Schedules'}
                             </Title>
 
@@ -379,9 +404,9 @@ const EnrollmentSchedulePage = () => {
                             }}
                         >
                             {/* Days of the Week Header */}
-                            <SimpleGrid cols={7} spacing={0} bg="white">
+                            <SimpleGrid cols={7} spacing={0}>
                                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                                    <Text key={d} ta="center" fz="xs" fw={700} c="dimmed" tt="uppercase" py="sm" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
+                                    <Text key={d} ta="center" fz="xs" fw={700} c="dimmed" tt="uppercase" py="sm">
                                         {d}
                                     </Text>
                                 ))}
@@ -390,25 +415,55 @@ const EnrollmentSchedulePage = () => {
                             {/* Calendar Days Matrix */}
                             <SimpleGrid 
                                 cols={7} 
-                                spacing={1} // The 1px spacing acts as the calendar border lines
-                                bg="gray.3" // This color bleeds through the 1px gap to look like borders
+                                spacing={1}
+                                bg={isDark ? 'dark.8' : 'gray.3'}
                             >
                                 {trimmedCells.map((day, index) => {
                                     if (!day) {
                                         return (
-                                            <Box key={`empty-${index}`} bg="gray.0" style={{ minHeight: '110px' }} />
+                                            <Box key={`empty-${index}`} bg={isDark ? 'dark.9' : 'gray.1'} style={{ minHeight: '110px' }} />
                                         );
                                     }
 
-                                    const dateObj = new Date(day.date);
+                                    // Safely parse the date
+                                    const safeDate = day.date.replace(/-/g, '/');
+                                    const dateObj = new Date(safeDate);
                                     const dayNumber = dateObj.getDate();
+                                    
+                                    // Check bookings
                                     const isBookedDate = bookedSchedule?.rawDate === day.date;
-                                    const isDayDisabled = isPastDate(day.date) || bookedSchedule?.remarks === 1;
+                                    const isMyAMBooking = isBookedDate && bookedSchedule?.time === 'AM';
+                                    const isMyPMBooking = isBookedDate && bookedSchedule?.time === 'PM';
+                                    const finalizedBooking = bookedSchedule?.remarks === 1;
+
+                                    // --- NEW TIME LOGIC ---
+                                    const now = new Date();
+                                    const todayDateObj = new Date();
+                                    
+                                    // Zero out the times to compare dates accurately
+                                    todayDateObj.setHours(0, 0, 0, 0);
+                                    dateObj.setHours(0, 0, 0, 0);
+                                    
+                                    const isToday = dateObj.getTime() === todayDateObj.getTime();
+                                    const isPast = dateObj < todayDateObj;
+                                    
+                                    // AM expires if it's a past date, or if it's today and past 12:00 NN (12)
+                                    const isAMExpired = isPast || (isToday && now.getHours() >= 12);
+                                    
+                                    // PM expires if it's a past date, or if it's today and past 5:00 PM (17)
+                                    const isPMExpired = isPast || (isToday && now.getHours() >= 17);
+                                    
+                                    // The whole day box is visually disabled ONLY if finalized OR both slots are expired
+                                    const isDayDisabled = finalizedBooking || (isAMExpired && isPMExpired);
 
                                     return (
                                         <Box 
                                             key={index} 
-                                            bg={isDayDisabled ? 'gray.0' : 'white'}
+                                            bg={
+                                                isDayDisabled 
+                                                ? (isDark ? 'dark.6' : 'gray.1')
+                                                : (isDark ? 'dark.8' : 'white')  
+                                            }
                                             p={{ base: 4, sm: 'xs' }}
                                             style={{ 
                                                 minHeight: '80px',
@@ -416,7 +471,7 @@ const EnrollmentSchedulePage = () => {
                                                 flexDirection: 'column' 
                                             }}
                                         >
-                                            <Text ta="right" fw={600} fz={{ base: 'xs', sm: 'sm' }} c={isDayDisabled ? "gray.4" : "dark"} mb={8}>
+                                            <Text ta="left" fw={600} fz={{ base: 'lg', sm: 'xl', md: 'xl', lg: 'xl'}} c={isDayDisabled ? "gray.4" : "dark"} mb={8}>
                                                 {dayNumber}
                                             </Text>
 
@@ -426,7 +481,7 @@ const EnrollmentSchedulePage = () => {
                                                 total={day.amSlotsTotal}
                                                 isMyBooking={isBookedDate && bookedSchedule.time === 'AM'}
                                                 onClick={() => handleSlotSelection(day, 'AM')}
-                                                disabled={isDayDisabled}
+                                                disabled={finalizedBooking || isAMExpired || isMyAMBooking}
                                             />
 
                                             <CompactSlot
@@ -435,7 +490,7 @@ const EnrollmentSchedulePage = () => {
                                                 total={day.pmSlotsTotal}
                                                 isMyBooking={isBookedDate && bookedSchedule.time === 'PM'}
                                                 onClick={() => handleSlotSelection(day, 'PM')}
-                                                disabled={isDayDisabled}
+                                                disabled={finalizedBooking || isPMExpired || isMyPMBooking}
                                             />
                                         </Box>
                                     );
@@ -444,10 +499,45 @@ const EnrollmentSchedulePage = () => {
                         </Box>
                     ) : (
                         <Center p="xl" style={{ minHeight: '300px' }}>
-                            <Text c="dimmed">No available schedules found.</Text>
+                            <Alert icon={<IconAlertCircle size={16} />} color="red" radius="md" variant="light" p="sm">
+                                <Text fw={500} fz="sm">Manual enrollment scheduling only available for Graduate School students</Text>
+                            </Alert>
                         </Center>
                     )}
                 </Paper>
+
+                {/* Legend */}
+                {currentMonthData && (
+                    <Group gap="lg" mt="lg" px="xs">
+                        <Text fz="sm" fw={600} c="dimmed" tt="uppercase">Legend:</Text>
+                        <Group gap={8}>
+                            <Box w={16} h={16} bg="teal.6" style={{ borderRadius: '4px' }} />
+                            <Text fz="xs" fw={500} c="dimmed">Available</Text>
+                        </Group>
+
+                        <Group gap={8}>
+                            <Box w={16} h={16} bg="gray.4" style={{ borderRadius: '4px' }} />
+                            <Text fz="xs" fw={500} c="dimmed">Fully Booked / Unavailable</Text>
+                        </Group>
+
+                        <Group gap={8}>
+                            <Box 
+                                w={16} 
+                                h={16} 
+                                bg="blue.6" 
+                                style={{ 
+                                    borderRadius: '4px', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center' 
+                                }}
+                            >
+                                <IconStarFilled size={10} color="white" />
+                            </Box>
+                            <Text fz="xs" fw={500} c="dimmed">Your Chosen Schedule</Text>
+                        </Group>
+                    </Group>
+                )}
 
                 {/* Confirmation Modal */}
                 <Modal
@@ -471,7 +561,9 @@ const EnrollmentSchedulePage = () => {
                             <Table.Tbody>
                                 <Table.Tr>
                                     <Table.Th w="30%">Date</Table.Th>
-                                    <Table.Td>{new Date(selectedSlot.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</Table.Td>
+                                    <Table.Td>
+                                        {new Date(selectedSlot.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                                    </Table.Td>
                                 </Table.Tr>
                                 <Table.Tr>
                                     <Table.Th>Time</Table.Th>
@@ -486,10 +578,10 @@ const EnrollmentSchedulePage = () => {
                     )}
 
                     <Group justify="flex-end">
-                        <Button variant="default" onClick={closeModal} disabled={bookingLoading}>
+                        <Button variant="light" color="gray" onClick={closeModal} disabled={bookingLoading} size="xs">
                             Cancel
                         </Button>
-                        <Button color="blue" onClick={handleBookingConfirm} loading={bookingLoading}>
+                        <Button variant="light" color="teal" onClick={handleBookingConfirm} loading={bookingLoading} size="xs">
                             Confirm Slot
                         </Button>
                     </Group>

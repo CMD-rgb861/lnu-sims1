@@ -112,14 +112,14 @@ const AdvisedSubjectsPage = () => {
                     Advised Subjects
                 </Title>
                 <Text fz="xs" fw={500} mb="lg" c="dimmed">
-                    View your officially advised subjects for the current semester.
+                    <Text fz="xs" fw={500} mb="lg" c="dimmed">View advised subjects for the current semester.</Text>
                 </Text>
 
                 {!advisedData ? (
                     // Empty State (Matches the old blade warning)
                     <Center style={{ height: '50vh' }}>
-                        <Alert icon={<IconAlertCircle size={16} />} color="red" variant="light" radius="md" p="lg">
-                            <Text fw={600}>No Advised Subjects Yet</Text>
+                        <Alert icon={<IconAlertCircle size={16} />} color="red" variant="light" radius="md" p="sm">
+                            <Text fw={500} fz="sm">No Advised Subjects Yet</Text>
                         </Alert>
                     </Center>
                 ) : (

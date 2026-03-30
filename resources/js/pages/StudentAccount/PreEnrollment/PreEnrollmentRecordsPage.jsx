@@ -60,8 +60,8 @@ const PreEnrollmentRecordsPage = () => {
     const [currentEnrollment, setCurrentEnrollment] = useState(null);
     const [previousEnrollments, setPreviousEnrollments] = useState([]);
     const [rescheduled, setRescheduled] = useState(false);
-    const [enrollmentSchedule, setEnrollmentSchedule] = useState('');
-    const [enrollmentScheduleTime, setEnrollmentScheduleTime] = useState('');
+    const [enrollmentSchedule, setEnrollmentSchedule] = useState('TBA');
+    const [enrollmentScheduleTime, setEnrollmentScheduleTime] = useState('TBA');
 
     // Filter States
     const [yearFilter, setYearFilter] = useState('');
@@ -72,16 +72,32 @@ const PreEnrollmentRecordsPage = () => {
     useEffect(() => {
         const fetchPreEnrollmentData = async () => {
             try {
-                // Adjust this API endpoint to match your actual Laravel route
                 const targetId = user.id;
                 const response = await axiosClient.get(`/api/pe/s/fetch/records/${targetId}`);
                 
                 const data = response.data;
                 setCurrentEnrollment(data.currentEnrollment || null);
-                setPreviousEnrollments(data.previousEnrollments || []);
+
+                const rawPrevRecords = data.previousEnrollments;
+                let extractedRecords = [];
+
+                if (rawPrevRecords) {
+                    if (Array.isArray(rawPrevRecords)) {
+                        extractedRecords = rawPrevRecords;
+                    } else if (rawPrevRecords.id) {
+                        extractedRecords = [rawPrevRecords];
+                    } else if (rawPrevRecords.data && Array.isArray(rawPrevRecords.data)) {
+                        extractedRecords = rawPrevRecords.data;
+                    } else {
+                        extractedRecords = Object.values(rawPrevRecords);
+                    }
+                }
+
+                setPreviousEnrollments(extractedRecords);
+
                 setRescheduled(data.rescheduled || false);
-                setEnrollmentSchedule(data.enrollmentSchedule || '');
-                setEnrollmentScheduleTime(data.enrollmentScheduleTime || '');
+                setEnrollmentSchedule(data.enrollmentSchedule);
+                setEnrollmentScheduleTime(data.enrollmentScheduleTime);
             } catch (error) {
                 console.error("Error fetching pre-enrollment data", error);
             } finally {
@@ -95,14 +111,10 @@ const PreEnrollmentRecordsPage = () => {
     }, [user.id]);
 
     const getStatusStyles = () => {
-        const isDark = colorScheme === 'dark';
-        if (currentEnrollment?.enrollment_status === true) {
-            return { bg: isDark ? 'dark.7' : 'gray.0', status: 1 };
-        }
-        if (rescheduled) {
-            return { bg: isDark ? 'dark.7' : 'gray.0', status: 0 };
-        }
-        return { bg: isDark ? 'dark.7' : 'gray.0', status: 0 }; 
+        return {
+            bg: colorScheme === 'dark' ? 'dark.7' : 'gray.0',
+            status: currentEnrollment?.enrollment_status === true ? 1 : 0
+        };
     };
 
     const styles = getStatusStyles();
@@ -110,7 +122,8 @@ const PreEnrollmentRecordsPage = () => {
 
     // Filter Logic
     const filteredPreviousEnrollments = previousEnrollments.filter(pe => {
-        const matchYear = !yearFilter || yearFilter === 'all' || pe.school_year.id.toString() === yearFilter;
+        if (!pe) return false;
+        const matchYear = !yearFilter || yearFilter === 'all' || pe.school_year?.id?.toString() === yearFilter;
         const matchStanding = !standingFilter || standingFilter === 'all' || pe.acad_standing?.toString() === standingFilter;
         return matchYear && matchStanding;
     });
@@ -146,46 +159,21 @@ const PreEnrollmentRecordsPage = () => {
                         Previous Pre-Enrollment Records
                     </Title>
 
-                    {/* Filters */}
+                    {/* Filters Skeleton */}
                     <Grid align="center" mb="xl">
                         <Grid.Col span="content">
-                            <Text fw={500} fz="sm" c="dimmed"><IconFilter size={14}/>  Filter by:</Text>
+                            <Skeleton height={20} width={80} />
                         </Grid.Col>
                         <Grid.Col span={{ base: 12, md: 3 }}>
-                            <Select
-                                placeholder="By School Year/Semester"
-                                size="sm"
-                                data={[
-                                    { value: 'all', label: 'Show All' },
-                                    ...previousEnrollments.map(pe => ({
-                                        value: pe.school_year.id.toString(),
-                                        label: `S.Y. ${pe.school_year.school_year_from}-${pe.school_year.school_year_to} - ${getSemester(pe.school_year.semester)}`
-                                    }))
-                                ]}
-                                value={yearFilter}
-                                onChange={setYearFilter}
-                                clearable
-                            />
+                            <Skeleton height={36} radius="md" />
                         </Grid.Col>
                         <Grid.Col span={{ base: 12, md: 3 }}>
-                            <Select
-                                placeholder="By Academic Standing"
-                                size="sm"
-                                data={[
-                                    { value: 'all', label: 'Show All' },
-                                    { value: '1', label: 'Regular Student' },
-                                    { value: '2', label: 'Irregular Student' },
-                                ]}
-                                value={standingFilter}
-                                onChange={setStandingFilter}
-                                clearable
-                            />
+                            <Skeleton height={36} radius="md" />
                         </Grid.Col>
                     </Grid>
 
                     <SimpleGrid cols={{ base: 1, md: 2, lg: 3 }} spacing="lg">
                         <Card withBorder radius="lg" p="md">
-                            {/* Top Image Replacement: Blue Gradient Section */}
                             <Card.Section 
                                 h={100} 
                                 style={{ 
@@ -197,7 +185,6 @@ const PreEnrollmentRecordsPage = () => {
                                 </Group>
                             </Card.Section>
                 
-                            {/* Middle Section: Main Info */}
                             <Group mt="md" wrap="nowrap">
                                 <IconSchool size={20} stroke={1.5} style={{ color: 'var(--mantine-color-dimmed)' }} />
                                 <Skeleton height={20} width="40%" mb="md" radius="md" />
@@ -205,7 +192,6 @@ const PreEnrollmentRecordsPage = () => {
 
                             <Skeleton height={20} width="40%" mb="md" radius="md" />
                 
-                            {/* Bottom Footer Section: 3-Column Stats (Matching the image style) */}
                             <Card.Section inheritPadding mt="sm" pb="md">
                                 <Divider my="sm" />
                                 <SimpleGrid cols={3}>
@@ -250,9 +236,15 @@ const PreEnrollmentRecordsPage = () => {
                         {/* Header Section: Title and Academic Standing */}
                         <Group justify="space-between" align="flex-start" mb="lg">
                             <Title order={4} fw={500} fz="sm">Current Pre-Enrollment Details</Title>
-                            <Badge color={acadStanding.color} size="lg" radius="sm" variant="light">
-                                {acadStanding.label}
-                            </Badge>
+                            { currentEnrollment.program.college_id === 4 ? (
+                                <Badge color="indigo" size="lg" radius="sm" variant="light">
+                                    Graduate School
+                                </Badge>
+                            ) : (
+                                <Badge color={acadStanding.color} size="lg" radius="sm" variant="light">
+                                    {acadStanding.label}
+                                </Badge>
+                            )}
                         </Group>
 
                         {/* Body Section: Academic Information */}
@@ -302,7 +294,7 @@ const PreEnrollmentRecordsPage = () => {
                                         <Group gap="xs">
                                             <Badge size="lg" radius="lg" color="blue" variant="light" leftSection={<IconCalendar size={14}/>}>
                                                 {enrollmentSchedule}
-                                            </Badge>
+                                            </Badge> 
                                             <Badge size="lg" radius="lg" color="blue" variant="light" leftSection={<IconClock size={14}/>}>
                                                 {enrollmentScheduleTime}
                                             </Badge>
@@ -331,7 +323,7 @@ const PreEnrollmentRecordsPage = () => {
                                 radius="md"
                                 fz="xs"
                                 rightSection={<IconArrowUpRight size={16} />}
-                                disabled={currentEnrollment?.acad_standing === 1}
+                                disabled={Number(currentEnrollment?.acad_standing) === 1}
                                 // onClick={() => openEditModal()} 
                             >
                                 Update Pre-Enrollment Details
@@ -355,10 +347,12 @@ const PreEnrollmentRecordsPage = () => {
                             size="sm"
                             data={[
                                 { value: 'all', label: 'Show All' },
-                                ...previousEnrollments.map(pe => ({
-                                    value: pe.school_year.id.toString(),
-                                    label: `S.Y. ${pe.school_year.school_year_from}-${pe.school_year.school_year_to} - ${getSemester(pe.school_year.semester)}`
-                                }))
+                                ...previousEnrollments
+                                    .filter(pe => pe && pe.school_year && pe.school_year.id) 
+                                    .map(pe => ({
+                                        value: pe.school_year.id.toString(),
+                                        label: `S.Y. ${pe.school_year.school_year_from}-${pe.school_year.school_year_to} - ${getSemester(pe.school_year.semester)}`
+                                    }))
                             ]}
                             value={yearFilter}
                             onChange={setYearFilter}

@@ -144,7 +144,6 @@ const PreviousPreEnrollmentCards = ({ records = [] }) => {
                 ))}
             </SimpleGrid>
 
-            {/* Render Pagination only if there is more than 1 page */}
             {totalPages > 1 && (
                 <Center mt="md">
                     <Pagination 

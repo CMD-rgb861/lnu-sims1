@@ -99,9 +99,9 @@ class StudentScheduleController extends Controller
         $studentProgramLevelId = $enrollmentDetails->program->program_level_id; 
         $studentCollegeId = $enrollmentDetails->program->college_id; 
 
-        if (!in_array($studentProgramLevelId, [7, 8])) {
-            return response()->json(['error' => 'Manual enrollment scheduling only available for Graduate School students.'], 403);
-        }
+        // if (!in_array($studentProgramLevelId, [7, 8])) {
+        //     return response()->json(['error' => 'Manual enrollment scheduling only available for Graduate School students.'], 403);
+        // }
         
         $schedules = Schedule::query()
             ->with(['slots' => function ($query) use ($studentCollegeId) {
@@ -257,7 +257,10 @@ class StudentScheduleController extends Controller
                 return response()->json(['error' => 'Failed to book the schedule.'], 500);
             }
 
-            return response()->json(['message' => 'Schedule booked successfully.'], 200);
+            return response()->json([
+                'message' => 'Enrollment schedule successfully saved!',
+                'type' => 'success',
+            ], 200);
         });
     }
 }

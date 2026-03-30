@@ -165,7 +165,7 @@ class EnrollmentDetailController extends Controller
             ->where('student_account_id', $targetId)
             ->where('school_year_id', '!=', $activeSchoolYearId)
             ->orderBy('school_year_id', 'desc')
-            ->first();
+            ->get();
 
         $currentEnrollment = EnrollmentDetail::with(['school_year', 'program', 'schedule_slot.schedule'])
             ->where('student_account_id', $targetId)
