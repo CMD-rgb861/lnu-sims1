@@ -27,13 +27,15 @@ const getYearLevelLabel = (level) => {
 
 const EnrollmentDetailsUpdateModal = ({ 
     opened, 
+    onClose,
     onSubmit, 
     isSubmitting, 
     activeSchoolYear, 
     previousEnrollment, 
     programs,
     programLevels,
-    onLogout
+    onLogout,
+    isUpdating
 }) => {
     
     const form = useForm({
@@ -64,7 +66,7 @@ const EnrollmentDetailsUpdateModal = ({
     return (
         <Modal
             opened={opened}
-            onClose={() => {}} // Disabled intentionally
+            onClose={() => {}} 
             title={<Text fw={700} size="lg">Update Enrollment Details</Text>}
             size="md"
             radius="md"
@@ -95,12 +97,14 @@ const EnrollmentDetailsUpdateModal = ({
                     </Box>
 
                     {/* Instructions Alert */}
-                    <Alert variant="light" color="gray" icon={<IconInfoCircle />} title="Instructions:" radius="lg"> 
-                        <Text size="xs">
-                            Please update your enrollment details for this semester. Ensure that the selected program and year level is correct.
-                        </Text>
-                    </Alert>
-
+                    { isUpdating === false && (
+                        <Alert variant="light" color="gray" icon={<IconInfoCircle />} title="Instructions:" radius="lg"> 
+                            <Text size="xs">
+                                Please update your enrollment details for this semester. Ensure that the selected program and year level is correct.
+                            </Text>
+                        </Alert>
+                    )}
+    
                     {/* Previous Enrollment Details */}
                     {previousEnrollment ? (
                         <Alert variant="light" color="blue" icon={<IconInfoCircle />} title="Previous Enrollment Details:">
@@ -118,7 +122,6 @@ const EnrollmentDetailsUpdateModal = ({
                     )}
 
                     {/* Form Fields */}
-
                     <Select
                         withAsterisk
                         label="Level"
@@ -176,7 +179,11 @@ const EnrollmentDetailsUpdateModal = ({
 
                     {/* Submit Button */}
                     <Group justify="flex-end" mt="md">
-                        <Button fz="xs" variant="subtle" color="gray" onClick={onLogout}>Logout</Button>
+                        { isUpdating === false ? (
+                            <Button fz="xs" variant="subtle" color="gray" onClick={onLogout}>Logout</Button>
+                        ) : (
+                            <Button fz="xs" variant="subtle" color="gray" onClick={onClose}>Cancel</Button>
+                        )}
                         <Button 
                             fz="xs"
                             variant="light"

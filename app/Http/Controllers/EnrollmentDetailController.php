@@ -167,6 +167,12 @@ class EnrollmentDetailController extends Controller
             ->orderBy('school_year_id', 'desc')
             ->get();
 
+        $previousEnrollment = EnrollmentDetail::with(['school_year', 'program'])
+            ->where('student_account_id', $targetId)
+            ->where('school_year_id', '!=', $activeSchoolYearId)
+            ->orderBy('school_year_id', 'desc')
+            ->first();
+
         $currentEnrollment = EnrollmentDetail::with(['school_year', 'program', 'schedule_slot.schedule'])
             ->where('student_account_id', $targetId)
             ->where('school_year_id', $activeSchoolYearId)
@@ -189,6 +195,7 @@ class EnrollmentDetailController extends Controller
         // 5. Return clean JSON to React
         return response()->json([
             'currentEnrollment'      => $currentEnrollment,
+            'previousEnrollment'     => $previousEnrollment,
             'previousEnrollments'    => $previousEnrollments,
             'rescheduled'            => $rescheduled,
             'enrollmentSchedule'     => $enrollmentSchedule,
@@ -239,62 +246,77 @@ class EnrollmentDetailController extends Controller
             'enrollment_type'=> 'required'
         ]);
 
-        if ($validator->fails()) 
-        {
-            if ($request->ajax()) 
-            {
+        if ($validator->fails()) {
+            if ($request->ajax()) {
                 return response()->json([
                     'errors' => $validator->errors(),
                 ], 422);
             }
         }
 
-        $studentAccount = '';
-
-        if (Auth::guard('student')->check()) {
-            $studentAccount = Auth::guard('student')->user();
+        if (!Auth::guard('student')->check()) {
+            return response()->json([
+                'message' => 'Unauthorized access.',
+                'type' => 'error'
+            ], 401);
         }
 
-        $studentId = $studentAccount->id;
+        $studentId = Auth::guard('student')->user()->id;
 
         $activeSchoolYear = SchoolYear::where('is_active', 1)->first();
+        
+        if (!$activeSchoolYear) {
+            return response()->json([
+                'message' => 'No active school year found.',
+                'type' => 'error'
+            ], 404);
+        }
+        
         $activeSchoolYearId = $activeSchoolYear->id;
 
         DB::beginTransaction();
 
-        try{
-            $enrollmentDetails = new EnrollmentDetail();
+        try {
+            $enrollmentDetails = EnrollmentDetail::firstOrNew([
+                'student_account_id' => $studentId,
+                'school_year_id' => $activeSchoolYearId
+            ]);
 
-            // Handle form fields 
-            $enrollmentDetails->student_account_id = $studentId;
+            $isUpdating = $enrollmentDetails->exists;
+
             $enrollmentDetails->program_id = $request->program_id;
             $enrollmentDetails->year_level = $request->year_level;
             $enrollmentDetails->enrollment_type = $request->enrollment_type;
-            $enrollmentDetails->school_year_id = $activeSchoolYearId;
-            $enrollmentDetails->enrolling_teacher_status = 0;
-            $enrollmentDetails->eaf_status = 0;
-            $enrollmentDetails->enrollment_status = 0;
+
+            if (!$isUpdating) {
+                $enrollmentDetails->enrolling_teacher_status = 0;
+                $enrollmentDetails->eaf_status = 0;
+                $enrollmentDetails->enrollment_status = 0;
+            } 
 
             $enrollmentDetails->save();
 
             DB::commit();
 
-            // Log user activity
+            $logMessage = $isUpdating 
+                ? 'Updated pre-enrollment details for the current semester' 
+                : 'Created pre-enrollment details for the current semester';
+
             StudentLogsProvider::log(
-                'Updated pre-enrollment details for the current semester',
+                $logMessage,
                 3,
                 'My Profile'
             );
 
             return response()->json([
-                'message' => 'Enrollment detail successfully updated!',
+                'message' => 'Enrollment detail successfully ' . ($isUpdating ? 'updated!' : 'saved!'),
                 'type' => 'success',
             ], 200);
 
-        }catch(\Exception $e){
+        } catch(\Exception $e) {
             DB::rollBack();
             return response()->json([
-                'message' => 'Failed updating enrollment detail.' . $e->getMessage(),
+                'message' => 'Failed processing enrollment detail. ' . $e->getMessage(),
                 'type' => 'error',
             ], 500);
         }

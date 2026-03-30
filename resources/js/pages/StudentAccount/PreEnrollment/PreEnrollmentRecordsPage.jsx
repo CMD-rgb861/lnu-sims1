@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { Navigate, Link } from 'react-router-dom';
+import { useDisclosure } from '@mantine/hooks';
+
 import { Paper, Title, Grid, SimpleGrid, Text, Center, Badge, Divider, Alert, Stack, Group, Box, Button, Anchor, Breadcrumbs, Skeleton, LoadingOverlay, Select, Card, useMantineColorScheme } from '@mantine/core';
 import { IconAlertCircle, IconCheck, IconCalendar, IconClock, IconArrowUpRight, IconSchool, IconUser, IconFilter } from '@tabler/icons-react';
 
 import axiosClient from '../../../api/axiosClient';
 import { useAuth } from '../../../hooks/useAuth';
+
 import PreviousPreEnrollmentCards from '../../../components/Cards/StudentAccount/PreviousPreEnrollmentCards';
+import EnrollmentDetailsUpdateModal from '../../../components/Modals/StudentAccount/EnrollmentDetailsUpdateModal';
 
 // --- Helper Functions ---
 const getSemester = (val) => {
@@ -56,10 +61,20 @@ const PreEnrollmentRecordsPage = () => {
     ));
 
     // States
+
+    const dispatch = useDispatch();
+
+    const [programs, setPrograms] = useState([]);
+    const [programLevels, setProgramLevels] = useState([]);
+
+    const [enrollmentUpdateModalOpened, { open: openEnrollmentUpdateModal, close: closeEnrollmentUpdateModal }] = useDisclosure(false);
+
     const [loading, setLoading] = useState(true);
     const [currentEnrollment, setCurrentEnrollment] = useState(null);
+    const [previousEnrollment, setPreviousEnrollment] = useState([]);
     const [previousEnrollments, setPreviousEnrollments] = useState([]);
     const [rescheduled, setRescheduled] = useState(false);
+
     const [enrollmentSchedule, setEnrollmentSchedule] = useState('TBA');
     const [enrollmentScheduleTime, setEnrollmentScheduleTime] = useState('TBA');
 
@@ -67,7 +82,45 @@ const PreEnrollmentRecordsPage = () => {
     const [yearFilter, setYearFilter] = useState('');
     const [standingFilter, setStandingFilter] = useState('');
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const { colorScheme } = useMantineColorScheme();
+
+    
+    const fetchPrograms = async () => {
+        try {
+            const response = await axiosClient.get('/api/p/programs'); 
+            setPrograms(response.data);
+        } catch (error) {
+            console.error("Failed to fetch programs:", error);
+        }
+    };
+
+    const fetchProgramLevels = async () => {
+        try {
+            const response = await axiosClient.get('/api/p/program-levels'); 
+            setProgramLevels(response.data);
+        } catch (error) {
+            console.error("Failed to fetch program levels:", error);
+        }
+    };
+
+    const handleEnrollmentSubmit = async (values) => {
+        setIsSubmitting(true);
+        try {
+            await axiosClient.post('/api/pe/s/update-enrollment-details', values);
+        } catch (error) {
+            console.error("Failed to update enrollment details", error);
+        } finally {
+            setIsSubmitting(false);
+            closeEnrollmentUpdateModal();
+        }
+    };
+
+    const handleLogout = (e) => {
+        e.preventDefault();
+        dispatch(logoutUser());
+    };
 
     useEffect(() => {
         const fetchPreEnrollmentData = async () => {
@@ -92,9 +145,8 @@ const PreEnrollmentRecordsPage = () => {
                         extractedRecords = Object.values(rawPrevRecords);
                     }
                 }
-
+                setPreviousEnrollment(data.previousEnrollment);
                 setPreviousEnrollments(extractedRecords);
-
                 setRescheduled(data.rescheduled || false);
                 setEnrollmentSchedule(data.enrollmentSchedule);
                 setEnrollmentScheduleTime(data.enrollmentScheduleTime);
@@ -107,7 +159,10 @@ const PreEnrollmentRecordsPage = () => {
 
         if (user.id) {
             fetchPreEnrollmentData();
+            fetchProgramLevels();
+            fetchPrograms();
         }
+
     }, [user.id]);
 
     const getStatusStyles = () => {
@@ -217,176 +272,191 @@ const PreEnrollmentRecordsPage = () => {
     }
 
     return (
-        <Grid>
-            <Grid.Col span={12}>
-                <Breadcrumbs separator=">" mb="md" fw={400} fz="xs">{items}</Breadcrumbs>
-                <Divider mb="lg" />
-                <LoadingOverlay visible={loading} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
-                
-                <Title align="left" order={2} mb={4} fw={600} fz={20}>
-                    Pre-Enrollment Records
-                </Title>
-                <Text fz="xs" fw={500} mb="lg" c="dimmed">
-                    View and manage your pre-enrollment details and records.
-                </Text>
+        <>
+            <EnrollmentDetailsUpdateModal
+                opened={enrollmentUpdateModalOpened}
+                onClose={closeEnrollmentUpdateModal}
+                onSubmit={handleEnrollmentSubmit}
+                isSubmitting={isSubmitting}
+                activeSchoolYear={user?.active_school_year}
+                previousEnrollment={previousEnrollment} 
+                programs={programs}
+                programLevels={programLevels}
+                onLogout={handleLogout}     
+                isUpdating={true}
+            />
 
-                {/* Current Enrollment Details Card */}
-                {currentEnrollment && (
-                    <Paper p="xl" radius="lg" bg={styles.bg} withBorder mb="xl">
-                        {/* Header Section: Title and Academic Standing */}
-                        <Group justify="space-between" align="flex-start" mb="lg">
-                            <Title order={4} fw={500} fz="sm">Current Pre-Enrollment Details</Title>
-                            { currentEnrollment.program.college_id === 4 ? (
-                                <Badge color="indigo" size="lg" radius="sm" variant="light">
-                                    Graduate School
-                                </Badge>
-                            ) : (
-                                <Badge color={acadStanding.color} size="lg" radius="sm" variant="light">
-                                    {acadStanding.label}
-                                </Badge>
-                            )}
-                        </Group>
+            <Grid>
+                <Grid.Col span={12}>
+                    <Breadcrumbs separator=">" mb="md" fw={400} fz="xs">{items}</Breadcrumbs>
+                    <Divider mb="lg" />
+                    <LoadingOverlay visible={loading} zIndex={1000} overlayProps={{ radius: "sm", blur: 2 }} />
+                    
+                    <Title align="left" order={2} mb={4} fw={600} fz={20}>
+                        Pre-Enrollment Records
+                    </Title>
+                    <Text fz="xs" fw={500} mb="lg" c="dimmed">
+                        View and manage your pre-enrollment details and records.
+                    </Text>
 
-                        {/* Body Section: Academic Information */}
-                        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="xl">
-                            <Stack gap={4}>
-                                <Text fz="xs" tt="uppercase" fw={600} c="dimmed">School Year & Term</Text>
-                                <Text fw={700} fz={25} lts={-1.5}>S.Y. {currentEnrollment.school_year?.school_year_from} - {currentEnrollment.school_year?.school_year_to}</Text>
-                                <Text fz="md" fw={500}>{getSemester(currentEnrollment.school_year?.semester)}</Text>
-                            </Stack>
-
-                            <Stack gap={4}>
-                                <Text fz="xs" tt="uppercase" fw={600} c="dimmed">Year Level & Enrollee Type</Text>
-                                <Group gap="xs" wrap="nowrap">
-                                    <IconUser size={20} stroke={1.5} style={{ color: 'var(--mantine-color-dimmed)' }} />
-                                    <Text fw={700} fz="sm">{getYearLevel(currentEnrollment.year_level)}</Text>
-                                    <Text fz="sm" fw={400} c="dimmed">({getEnrollmentType(currentEnrollment.enrollment_type)})</Text>
-                                </Group>
-                            </Stack>
-
-                            <Stack gap={4}>
-                                <Text fz="xs" tt="uppercase" fw={600} c="dimmed">Program</Text>
-                                <Group gap="xs" wrap="nowrap">
-                                    <IconSchool size={20} stroke={1.5} style={{ color: 'var(--mantine-color-dimmed)' }} />
-                                    <Text fw={700} fz="sm" style={{ lineHeight: 1.2 }}>
-                                        {currentEnrollment?.program?.program_name}
-                                    </Text>
-                                </Group>
-                            </Stack>
-                        </SimpleGrid>
-
-                        <Divider my="lg" />
-
-                        {/* Footer Section: Alerts, Schedule, and Actions */}
-                        {rescheduled && (
-                            <Alert icon={<IconAlertCircle size={16} />} color="yellow" mb="md" fw={600} radius="lg" variant="light" >
-                                <Text fz="sm" fw={500}>You have been re-scheduled due to non-appearance. Strictly follow your new schedule below to avoid delays:</Text>
-                            </Alert>
-                        )}
-
-                        <Group justify="space-between" align="flex-end">
-                            <Box>
-                                {styles.status !== 1 ? (
-                                    <Stack gap={6}>
-                                        <Text fw={600} size="xs" tt="uppercase" c="dimmed">
-                                            {rescheduled ? 'New Enrollment Schedule' : 'Enrollment Schedule'}
-                                        </Text>
-                                        <Group gap="xs">
-                                            <Badge size="lg" radius="lg" color="blue" variant="light" leftSection={<IconCalendar size={14}/>}>
-                                                {enrollmentSchedule}
-                                            </Badge> 
-                                            <Badge size="lg" radius="lg" color="blue" variant="light" leftSection={<IconClock size={14}/>}>
-                                                {enrollmentScheduleTime}
-                                            </Badge>
-                                        </Group>
-                                    </Stack>
+                    {/* Current Enrollment Details Card */}
+                    {currentEnrollment && (
+                        <Paper p="xl" radius="lg" bg={styles.bg} withBorder mb="xl">
+                            {/* Header Section: Title and Academic Standing */}
+                            <Group justify="space-between" align="flex-start" mb="lg">
+                                <Title order={4} fw={500} fz="sm">Current Pre-Enrollment Details</Title>
+                                { currentEnrollment.program.college_id === 4 ? (
+                                    <Badge color="indigo" size="lg" radius="sm" variant="light">
+                                        Graduate School
+                                    </Badge>
                                 ) : (
-                                    <Alert 
-                                        size="xs" 
-                                        icon={<IconCheck size={14} />} 
-                                        color="green"
-                                        radius="xl" 
-                                        py={5}
-                                        px="sm" 
-                                        variant="light" 
-                                        styles={{
-                                            icon: { marginRight: '1px' } 
-                                        }}>
-                                        <Text fw={600} fz="sm">Officially Enrolled</Text>
-                                    </Alert>
+                                    <Badge color={acadStanding.color} size="lg" radius="sm" variant="light">
+                                        {acadStanding.label}
+                                    </Badge>
                                 )}
-                            </Box>
+                            </Group>
 
-                            <Button 
-                                variant="subtle" 
-                                color="blue"
-                                radius="md"
-                                fz="xs"
-                                rightSection={<IconArrowUpRight size={16} />}
-                                disabled={Number(currentEnrollment?.acad_standing) === 1}
-                                // onClick={() => openEditModal()} 
-                            >
-                                Update Pre-Enrollment Details
-                            </Button>
-                        </Group>
-                    </Paper>
-                )}
+                            {/* Body Section: Academic Information */}
+                            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="xl">
+                                <Stack gap={4}>
+                                    <Text fz="xs" tt="uppercase" fw={600} c="dimmed">School Year & Term</Text>
+                                    <Text fw={700} fz={25} lts={-1.5}>S.Y. {currentEnrollment.school_year?.school_year_from} - {currentEnrollment.school_year?.school_year_to}</Text>
+                                    <Text fz="md" fw={500}>{getSemester(currentEnrollment.school_year?.semester)}</Text>
+                                </Stack>
 
-                <Title align="left" order={4} mb="md" fw={600} fz="md">
-                    Previous Pre-Enrollment Records
-                </Title>
+                                <Stack gap={4}>
+                                    <Text fz="xs" tt="uppercase" fw={600} c="dimmed">Year Level & Enrollee Type</Text>
+                                    <Group gap="xs" wrap="nowrap">
+                                        <IconUser size={20} stroke={1.5} style={{ color: 'var(--mantine-color-dimmed)' }} />
+                                        <Text fw={700} fz="sm">{getYearLevel(currentEnrollment.year_level)}</Text>
+                                        <Text fz="sm" fw={400} c="dimmed">({getEnrollmentType(currentEnrollment.enrollment_type)})</Text>
+                                    </Group>
+                                </Stack>
 
-                {/* Filters */}
-                <Grid align="center" mb="xl">
-                    <Grid.Col span="content">
-                        <Text fw={500} fz="sm" c="dimmed"><IconFilter size={14}/>  Filter by:</Text>
-                    </Grid.Col>
-                    <Grid.Col span={{ base: 12, md: 3 }}>
-                        <Select
-                            placeholder="By School Year/Semester"
-                            size="sm"
-                            data={[
-                                { value: 'all', label: 'Show All' },
-                                ...previousEnrollments
-                                    .filter(pe => pe && pe.school_year && pe.school_year.id) 
-                                    .map(pe => ({
-                                        value: pe.school_year.id.toString(),
-                                        label: `S.Y. ${pe.school_year.school_year_from}-${pe.school_year.school_year_to} - ${getSemester(pe.school_year.semester)}`
-                                    }))
-                            ]}
-                            value={yearFilter}
-                            onChange={setYearFilter}
-                            clearable
-                        />
-                    </Grid.Col>
-                    <Grid.Col span={{ base: 12, md: 3 }}>
-                        <Select
-                            placeholder="By Academic Standing"
-                            size="sm"
-                            data={[
-                                { value: 'all', label: 'Show All' },
-                                { value: '1', label: 'Regular Student' },
-                                { value: '2', label: 'Irregular Student' },
-                            ]}
-                            value={standingFilter}
-                            onChange={setStandingFilter}
-                            clearable
-                        />
-                    </Grid.Col>
-                </Grid>
+                                <Stack gap={4}>
+                                    <Text fz="xs" tt="uppercase" fw={600} c="dimmed">Program</Text>
+                                    <Group gap="xs" wrap="nowrap">
+                                        <IconSchool size={20} stroke={1.5} style={{ color: 'var(--mantine-color-dimmed)' }} />
+                                        <Text fw={700} fz="sm" style={{ lineHeight: 1.2 }}>
+                                            {currentEnrollment?.program?.program_name}
+                                        </Text>
+                                    </Group>
+                                </Stack>
+                            </SimpleGrid>
 
-                {/* Previous Records Content */}
-                {filteredPreviousEnrollments.length === 0 ? (
-                    <Center style={{ height: '30vh' }}>
-                        <Alert icon={<IconAlertCircle size={16} />} color="red" variant="light" radius="lg">
-                            <Text fz="sm" fw={500}>No Previous Records Found</Text>
-                        </Alert>
-                    </Center>
-                ) : (
-                    <PreviousPreEnrollmentCards records={filteredPreviousEnrollments} />
-                )}
-            </Grid.Col>
-        </Grid>
+                            <Divider my="lg" />
+
+                            {/* Footer Section: Alerts, Schedule, and Actions */}
+                            {rescheduled && (
+                                <Alert icon={<IconAlertCircle size={16} />} color="yellow" mb="md" fw={600} radius="lg" variant="light" >
+                                    <Text fz="sm" fw={500}>You have been re-scheduled due to non-appearance. Strictly follow your new schedule below to avoid delays:</Text>
+                                </Alert>
+                            )}
+
+                            <Group justify="space-between" align="flex-end">
+                                <Box>
+                                    {styles.status !== 1 ? (
+                                        <Stack gap={6}>
+                                            <Text fw={600} size="xs" tt="uppercase" c="dimmed">
+                                                {rescheduled ? 'New Enrollment Schedule' : 'Enrollment Schedule'}
+                                            </Text>
+                                            <Group gap="xs">
+                                                <Badge size="lg" radius="lg" color="blue" variant="light" leftSection={<IconCalendar size={14}/>}>
+                                                    {enrollmentSchedule}
+                                                </Badge> 
+                                                <Badge size="lg" radius="lg" color="blue" variant="light" leftSection={<IconClock size={14}/>}>
+                                                    {enrollmentScheduleTime}
+                                                </Badge>
+                                            </Group>
+                                        </Stack>
+                                    ) : (
+                                        <Alert 
+                                            size="xs" 
+                                            icon={<IconCheck size={14} />} 
+                                            color="green"
+                                            radius="xl" 
+                                            py={5}
+                                            px="sm" 
+                                            variant="light" 
+                                            styles={{
+                                                icon: { marginRight: '1px' } 
+                                            }}>
+                                            <Text fw={600} fz="sm">Officially Enrolled</Text>
+                                        </Alert>
+                                    )}
+                                </Box>
+
+                                <Button 
+                                    variant="subtle" 
+                                    color="blue"
+                                    radius="md"
+                                    fz="xs"
+                                    rightSection={<IconArrowUpRight size={16} />}
+                                    disabled={Number(currentEnrollment?.acad_standing) === 1}
+                                    onClick={() => openEnrollmentUpdateModal()} 
+                                >
+                                    Update Pre-Enrollment Details
+                                </Button>
+                            </Group>
+                        </Paper>
+                    )}
+
+                    <Title align="left" order={4} mb="md" fw={600} fz="md">
+                        Previous Pre-Enrollment Records
+                    </Title>
+
+                    {/* Filters */}
+                    <Grid align="center" mb="xl">
+                        <Grid.Col span="content">
+                            <Text fw={500} fz="sm" c="dimmed"><IconFilter size={14}/>  Filter by:</Text>
+                        </Grid.Col>
+                        <Grid.Col span={{ base: 12, md: 3 }}>
+                            <Select
+                                placeholder="By School Year/Semester"
+                                size="sm"
+                                data={[
+                                    { value: 'all', label: 'Show All' },
+                                    ...previousEnrollments
+                                        .filter(pe => pe && pe.school_year && pe.school_year.id) 
+                                        .map(pe => ({
+                                            value: pe.school_year.id.toString(),
+                                            label: `S.Y. ${pe.school_year.school_year_from}-${pe.school_year.school_year_to} - ${getSemester(pe.school_year.semester)}`
+                                        }))
+                                ]}
+                                value={yearFilter}
+                                onChange={setYearFilter}
+                                clearable
+                            />
+                        </Grid.Col>
+                        <Grid.Col span={{ base: 12, md: 3 }}>
+                            <Select
+                                placeholder="By Academic Standing"
+                                size="sm"
+                                data={[
+                                    { value: 'all', label: 'Show All' },
+                                    { value: '1', label: 'Regular Student' },
+                                    { value: '2', label: 'Irregular Student' },
+                                ]}
+                                value={standingFilter}
+                                onChange={setStandingFilter}
+                                clearable
+                            />
+                        </Grid.Col>
+                    </Grid>
+
+                    {/* Previous Records Content */}
+                    {filteredPreviousEnrollments.length === 0 ? (
+                        <Center style={{ height: '30vh' }}>
+                            <Alert icon={<IconAlertCircle size={16} />} color="red" variant="light" radius="lg">
+                                <Text fz="sm" fw={500}>No Previous Records Found</Text>
+                            </Alert>
+                        </Center>
+                    ) : (
+                        <PreviousPreEnrollmentCards records={filteredPreviousEnrollments} />
+                    )}
+                </Grid.Col>
+            </Grid>
+        </>
     );
 };
 

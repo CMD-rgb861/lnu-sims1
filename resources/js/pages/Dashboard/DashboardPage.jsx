@@ -175,6 +175,7 @@ const DashboardPage = () => {
                     programs={programs}
                     programLevels={programLevels}
                     onLogout={handleLogout}     
+                    isUpdating={false}
                 />
             </>
         )}

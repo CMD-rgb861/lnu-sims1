@@ -6,6 +6,7 @@ use App\Models\EnrollmentDetail;
 use App\Models\Schedule;
 use App\Models\ScheduleStudent;
 use App\Models\SchoolYear;
+use App\Providers\StudentLogsProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -256,6 +257,13 @@ class StudentScheduleController extends Controller
             if (!$insert) {
                 return response()->json(['error' => 'Failed to book the schedule.'], 500);
             }
+
+            // Log user activity
+            StudentLogsProvider::log(
+                'Selected/Changed enrollment schedule for graduate school students',
+                3,
+                'Enrollment Schedule'
+            );
 
             return response()->json([
                 'message' => 'Enrollment schedule successfully saved!',
