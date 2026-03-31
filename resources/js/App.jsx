@@ -24,6 +24,7 @@ import StatusMonitoringPage from './pages/StudentAccount/PreEnrollment/StatusMon
 import AdvisedSubjectsPage from './pages/StudentAccount/PreEnrollment/AdvisedSubjectsPage';
 import EnrollmentSchedulePage from './pages/StudentAccount/PreEnrollment/EnrollmentSchedulePage';
 import GradesPage from './pages/StudentAccount/Grades/GradesPage';
+import AccountSettingsPage from './pages/AccountSettings/AccountSettingsPage';
 
 function App() {
     const dispatch = useDispatch();
@@ -95,6 +96,8 @@ function App() {
                         <Route path="/pe/enrollment-schedule" element={<EnrollmentSchedulePage />} />
 
                         <Route path="/g/view" element={<GradesPage />} />
+
+                        <Route path="/as" element={<AccountSettingsPage />} />
 
                         {/* --- PROTECTED ROUTES FOR EMPLOYEE ACCOUNTs --- */}
                         <Route path="/um/employees" element={<EmployeeAccountsPage />} />

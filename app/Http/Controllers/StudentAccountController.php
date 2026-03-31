@@ -36,15 +36,6 @@ use Yajra\DataTables\Facades\DataTables;
 
 class StudentAccountController extends Controller
 {
-
-    // // Show student account index
-    // public function studentAccountsIndex()
-    // {
-    //     return view('pages.employees.user_management.student_accounts_layout');
-    // }
-
-    // STUDENT ACCOUNT FUNCTIONS 
-
     // Reusable function for student profile information
     private function getStudentProfileData($id)
     {

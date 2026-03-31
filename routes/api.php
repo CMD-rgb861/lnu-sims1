@@ -148,5 +148,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/fetch/semesters', [StudentGradeController::class, 'getSemesters'])->name('getSemesters');
         Route::get('/fetch/programs', [StudentGradeController::class, 'getPrograms'])->name('getPrograms');
     });
+
+    // ACCOUNT SETTINGS //
+    Route::prefix('/as/')->name('account_settings.')->group(function() {
+        // ACCOUNT SETTINGS ROUTES FOR STUDENT ACCOUNT //
+        Route::prefix('/s/')->name('student.')->group(function() {
+            Route::get('/data', [StudentAccountController::class, 'fetchAccountDetails'])->name('fetchStudentAccountDetails');
+            Route::put('/preferences/update', [StudentAccountController::class, 'updateAccountDetails'])->name('updateAccountDetails');
+            Route::put('/security/update', [StudentAccountController::class, 'updateAccountSecurity'])->name('updateAccountSecurity');
+        }); 
+
+        // ACCOUNT SETTINGS ROUTES FOR EMPLOYEE ACCOUNT //
+        Route::prefix('/s/')->name('student.')->group(function() {
+            Route::get('/data', [UserAccountController::class, 'fetchAccountDetails'])->name('fetchAccountDetails');
+            Route::put('/preferences/update', [UserAccountController::class, 'updateAccountDetails'])->name('updateAccountDetails');
+            Route::put('/security/update', [UserAccountController::class, 'updateAccountSecurity'])->name('updateAccountSecurity');
+        }); 
+
+    });
+    
     
 });

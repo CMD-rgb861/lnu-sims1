@@ -50,7 +50,7 @@ const sidebarLinks = [
   },
   { label: 'Grades', icon: IconChalkboardTeacher, link: '/g/view'},
   { type: 'divider', label: 'Additional Settings' },
-  { label: 'Account Settings', icon: IconUserCog, link: '/us' },
+  { label: 'Account Settings', icon: IconUserCog, link: '/as' },
   { label: 'Help', icon: IconHelp, link: '/us' },
 ];
 
