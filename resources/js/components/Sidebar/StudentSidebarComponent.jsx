@@ -48,7 +48,7 @@ const sidebarLinks = [
       { label: 'Enrollment Schedule', link: '/pe/enrollment-schedule'},
     ],
   },
-  { label: 'Grades', icon: IconChalkboardTeacher, link: '/al'},
+  { label: 'Grades', icon: IconChalkboardTeacher, link: '/g/view'},
   { type: 'divider', label: 'Additional Settings' },
   { label: 'Account Settings', icon: IconUserCog, link: '/us' },
   { label: 'Help', icon: IconHelp, link: '/us' },

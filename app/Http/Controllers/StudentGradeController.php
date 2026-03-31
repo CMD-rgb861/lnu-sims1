@@ -13,6 +13,18 @@ use Illuminate\Support\Facades\DB;
 
 class StudentGradeController extends Controller
 {
+    
+    /**
+     * Helper to keep semester naming consistent
+     */
+    private function getSemesterName($val)
+    {
+        if ($val == 1) return 'First Semester';
+        if ($val == 2) return 'Second Semester';
+        if ($val == 3) return 'Summer';
+        return 'Semester not specified';
+    }
+
     public function index()
     {
         return view('pages.students.grades.grades_layout');
@@ -28,7 +40,12 @@ class StudentGradeController extends Controller
         $lastUpdated = EnrollmentCourse::where('id_number', $id_number)
             ->max('updated_at');
 
-        $cacheKey = "grades_{$studentId}_" . md5($lastUpdated);
+        // Grab the filters
+        $semesterFilter = $request->input('semester', 'all');
+        $programFilter = $request->input('program', 'all');
+
+        // Add the filters to the cache key!
+        $cacheKey = "grades_{$studentId}_" . md5($lastUpdated) . "_sem_{$semesterFilter}_prog_{$programFilter}";
 
         return Cache::remember($cacheKey, 300, function () use ($studentId, $request) {
             return $this->fetchGrades($studentId, $request);
@@ -100,7 +117,6 @@ class StudentGradeController extends Controller
             ->where('student_accounts.id', $studentId)
             ->whereIn('enrollment_courses.status', ['enrolled', 'dropped'])
             ->select([
-                // enrollment_courses
                 'enrollment_courses.course_code',
                 'enrollment_courses.course_description',
                 'enrollment_courses.course_units',
@@ -109,12 +125,8 @@ class StudentGradeController extends Controller
                 'enrollment_courses.final_grade',
                 'enrollment_courses.inc',
                 'enrollment_courses.status',
-
-                // programs
                 'programs.program_name',
                 'programs.program_acronym',
-
-                // school_years
                 'school_years.id as school_year_id',
                 'school_years.school_year_from',
                 'school_years.school_year_to',
@@ -133,18 +145,10 @@ class StudentGradeController extends Controller
 
         $records = $query->get();
 
-        // $groupedByProgram = $records->groupBy(function ($item) {
-        //     if (!$item->program_name) {
-        //         return '';
-        //     }
-
-        //     return $item->program_name . ' (' . $item->program_acronym . ')';
-        // });
-
         $response = [];
 
         $groupedByTerm = $records->groupBy(function ($item) {
-            $semName = $item->semester == 1 ? 'First Semester' : 'Second Semester';
+            $semName = $this->getSemesterName($item->semester);
             return "{$semName} S.Y. {$item->school_year_from}-{$item->school_year_to}";
         });
 
@@ -165,9 +169,30 @@ class StudentGradeController extends Controller
                 foreach ($subjects as $index => $s) {
 
                     $inc = $s->inc == 'INC' ? $s->inc . ':' : '';
+                    $rawGrade = $s->final_grade ?? $s->grade;
+
+                    // 1. FORMAT GRADE TO 2 DECIMAL POINTS
+                    if (is_numeric($rawGrade)) {
+                        $rawGrade = number_format((float) $rawGrade, 1);
+                    }
+
                     $rating = $s->status === 'dropped'
                         ? 'DR'
-                        : ($inc . ($s->final_grade ?? $s->grade));
+                        : ($rawGrade ? ($inc . $rawGrade) : 'N/A');
+
+                    // 2. FORMAT INSTRUCTOR NAME (First letter after comma)
+                    $instructorName = $s->instructor ?? 'TBA';
+                    
+                    if ($instructorName !== 'TBA' && strpos($instructorName, ',') !== false) {
+                        $parts = explode(',', $instructorName, 2);
+                        $lastName = trim($parts[0]);
+                        $firstName = isset($parts[1]) ? trim($parts[1]) : '';
+                        
+                        if (!empty($firstName)) {
+                            $initial = mb_substr($firstName, 0, 1);
+                            $instructorName = "{$lastName}, {$initial}.";
+                        }
+                    }
 
                     $rows[] = [
                         // show program only once per group
@@ -176,7 +201,7 @@ class StudentGradeController extends Controller
                         'title' => $s->course_description,
                         'rating' => $rating,
                         'units' => number_format((float) $s->course_units, 2),
-                        'instructor' => $s->instructor,
+                        'instructor' => $instructorName,
                     ];
 
                     $lastProgram = $programName;
@@ -188,16 +213,26 @@ class StudentGradeController extends Controller
             $totalUnits = 0;
 
             foreach ($termRecords as $subject) {
-                $grade = floatval($subject->final_grade ?? $subject->grade);
-                $units = floatval($subject->course_units);
+                // Ignore dropped subjects or subjects marked strictly as INC for GWA
+                if ($subject->status === 'dropped' || $subject->inc === 'INC') {
+                    continue;
+                }
 
-                $totalWeighted += $grade * $units;
-                $totalUnits += $units;
+                $gradeRaw = $subject->final_grade ?? $subject->grade;
+
+                // Only calculate if the encoded grade is a valid number
+                if (is_numeric($gradeRaw)) {
+                    $grade = floatval($gradeRaw);
+                    $units = floatval($subject->course_units);
+
+                    $totalWeighted += $grade * $units;
+                    $totalUnits += $units;
+                }
             }
 
             $semGWA = $totalUnits > 0
                 ? number_format($totalWeighted / $totalUnits, 2)
-                : 0;
+                : '0.00';
 
             $response[] = [
                 'term' => $termName,
@@ -206,167 +241,21 @@ class StudentGradeController extends Controller
             ];
         }
 
-        // foreach ($groupedByProgram as $programName => $programRecords) {
-
-        //     $groupedTerms = $programRecords->groupBy(function ($item) {
-        //         $sy = $item->schoolYear;
-        //         $semName = $sy->semester == 1 ? 'First Semester' : 'Second Semester';
-        //         return "{$semName} S.Y. {$sy->school_year_from}-{$sy->school_year_to}";
-        //     });
-
-        //     $termsArray = [];
-
-        //     foreach ($groupedTerms as $termName => $subjects) {
-
-        //         $totalWeighted = 0;
-        //         $totalUnits = 0;
-
-        //         foreach ($subjects as $subject) {
-        //             $grade = floatval($subject->final_grade ?? $subject->grade);
-        //             $units = floatval($subject->course_units);
-
-        //             $totalWeighted += $grade * $units;
-        //             $totalUnits += $units;
-        //         }
-
-        //         $semGWA = $totalUnits > 0 ? number_format($totalWeighted / $totalUnits, 2) : 0;
-                
-
-        //         $termsArray[] = [
-        //             "term" => $termName,
-        //             "subjects" => $subjects->map(function ($s) {
-
-        //                 $inc = $s->inc ? $s->inc.':' : '';
-
-        //                 $date_dropped_removed = $s->status == 'dropped' ? 'DR' : $inc.$s->final_grade ?? $inc.$s->grade;
-
-        //                 return [
-        //                     "code" => $s->course_code,
-        //                     "title" => $s->course_description,
-        //                     "rating" => $date_dropped_removed,
-        //                     "units" => $s->course_units,
-        //                     "instructor" => $s->instructor,
-        //                 ];
-        //             }),
-        //             "semGWA" => $semGWA
-        //         ];
-        //     }
-
-        //     $response[] = [
-        //         "program" => $programName,
-        //         "terms" => $termsArray
-        //     ];
-        // }
-
-
-        // $query = DB::table('enrollment_courses as ec')
-        //     ->join('school_years as sy', 'sy.id', '=', 'ec.school_year_id')
-        //     ->join('programs as p', 'p.id', '=', 'ec.program_id')
-        //     ->where('ec.id_number', $student->id_number)
-        //     ->where('ec.status', 'enrolled')
-        //     ->whereNotNull('ec.program_id');
-
-        // if ($semesterFilter !== 'all') {
-        //     $query->where('ec.school_year_id', $semesterFilter);
-        // }
-
-        // if ($programFilter !== 'all') {
-        //     $query->where('ec.program_id', $programFilter);
-        // }
-
-        // $rows = $query
-        //     ->select([
-        //         'p.program_name',
-        //         'p.program_acronym',
-        //         'sy.id as school_year_id',
-        //         'sy.school_year_from',
-        //         'sy.school_year_to',
-        //         'sy.semester',
-
-        //         // subject info
-        //         'ec.course_code',
-        //         'ec.course_description',
-        //         'ec.course_units',
-        //         'ec.instructor',
-        //         'ec.status as course_status',
-        //         'ec.inc',
-        //         DB::raw('COALESCE(ec.final_grade, ec.grade) as grade'),
-
-        //         // aggregation per term
-        //         DB::raw('SUM(COALESCE(ec.final_grade, ec.grade) * ec.course_units)
-        //                 OVER (PARTITION BY ec.program_id, ec.school_year_id) as total_weighted'),
-
-        //         DB::raw('SUM(ec.course_units)
-        //                 OVER (PARTITION BY ec.program_id, ec.school_year_id) as total_units')
-        //     ])
-        //     ->orderByDesc('sy.school_year_from')
-        //     ->orderByDesc('sy.semester')
-        //     ->get();
-
-        // $groupedByProgram = $rows->groupBy(fn ($r) =>
-        //     "{$r->program_name} ({$r->program_acronym})"
-        // );
-
-        // $response = [];
-
-        // foreach ($groupedByProgram as $programName => $programRecords) {
-
-        //     $groupedTerms = $programRecords->groupBy(function ($r) {
-        //         $semName = $r->semester == 1 ? 'First Semester' : 'Second Semester';
-        //         return "$semName S.Y. {$r->school_year_from}-{$r->school_year_to}";
-        //     });
-
-        //     $termsArray = [];
-
-        //     foreach ($groupedTerms as $termName => $subjects) {
-
-        //         // ✅ SQL already computed this
-        //         $first = $subjects->first();
-        //         $semGWA = $first->total_units > 0
-        //             ? number_format($first->total_weighted / $first->total_units, 2)
-        //             : '0.00';
-
-        //         $termsArray[] = [
-        //             'term' => $termName,
-        //             'subjects' => $subjects->map(function ($s) {
-
-        //                 $rating = $s->course_status === 'dropped'
-        //                     ? 'DR'
-        //                     : ($s->inc ? $s->inc . ':' : '') . $s->grade;
-
-        //                 return [
-        //                     'code' => $s->course_code,
-        //                     'title' => $s->course_description,
-        //                     'rating' => $rating,
-        //                     'units' => $s->course_units,
-        //                     'instructor' => $s->instructor,
-        //                 ];
-        //             }),
-        //             'semGWA' => $semGWA,
-        //         ];
-        //     }
-
-        //     $response[] = [
-        //         'program' => $programName,
-        //         'terms' => $termsArray,
-        //     ];
-        // }
-
-        return response()->json($response);
+        return response()->json(array_values($response));
     }
 
     private function fetchSemesters($student)
     {
         $semesters = SchoolYear::whereHas('studentCourses', function ($query) use ($student) {
             $query->where('id_number', $student->id_number)
-                ->where('status', 'enrolled');
+                ->whereIn('status', ['enrolled', 'dropped']); 
         })
         ->distinct()
         ->orderByDesc('school_year_from')
         ->orderByDesc('semester')
         ->get(['id', 'semester', 'school_year_from', 'school_year_to'])
         ->map(function ($item) {
-            $semester = $item->semester == 1 ? 'First Semester' : 'Second Semester';
+            $semester = $this->getSemesterName($item->semester);
             $semesterLabel = "{$semester} S.Y. {$item->school_year_from}-{$item->school_year_to}";
 
             return [
@@ -382,7 +271,7 @@ class StudentGradeController extends Controller
     {
         $programs = Program::whereHas('studentCourses', function ($query) use ($student) {
             $query->where('id_number', $student->id_number)
-                ->where('status', 'enrolled');
+                ->whereIn('status', ['enrolled', 'dropped']); 
         })
         ->distinct()
         ->orderByDesc('program_name')
@@ -398,6 +287,5 @@ class StudentGradeController extends Controller
 
         return response()->json($programs);
     }
-
 
 }

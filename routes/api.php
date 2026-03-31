@@ -14,6 +14,7 @@ use App\Http\Controllers\PreEnrollmentController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\PSGCController;
 use App\Http\Controllers\StudentAccountController;
+use App\Http\Controllers\StudentGradeController;
 use App\Http\Controllers\StudentScheduleController;
 use App\Http\Controllers\UserAccountController;
 use App\Http\Controllers\UserRoleController;
@@ -139,6 +140,13 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/book-schedule', [StudentScheduleController::class, 'bookSchedule'])->name('bookSchedule');
             Route::post('/update-enrollment-details', [EnrollmentDetailController::class, 'createEnrollmentDetail'])->name('createEnrollmentDetail');
         }); 
+    });
+
+    // GRADE ROUTES //
+    Route::prefix('/g/')->name('grades.')->group(function() {
+        Route::get('/fetch/grades', [StudentGradeController::class, 'grades'])->name('grades');
+        Route::get('/fetch/semesters', [StudentGradeController::class, 'getSemesters'])->name('getSemesters');
+        Route::get('/fetch/programs', [StudentGradeController::class, 'getPrograms'])->name('getPrograms');
     });
     
 });

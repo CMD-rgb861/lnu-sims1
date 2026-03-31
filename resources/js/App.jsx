@@ -23,6 +23,7 @@ import PreEnrollmentRecordsPage from './pages/StudentAccount/PreEnrollment/PreEn
 import StatusMonitoringPage from './pages/StudentAccount/PreEnrollment/StatusMonitoringPage';
 import AdvisedSubjectsPage from './pages/StudentAccount/PreEnrollment/AdvisedSubjectsPage';
 import EnrollmentSchedulePage from './pages/StudentAccount/PreEnrollment/EnrollmentSchedulePage';
+import GradesPage from './pages/StudentAccount/Grades/GradesPage';
 
 function App() {
     const dispatch = useDispatch();
@@ -92,6 +93,8 @@ function App() {
                         <Route path="/pe/status-monitoring" element={<StatusMonitoringPage />} />
                         <Route path="/pe/advised-subjects" element={<AdvisedSubjectsPage />} />
                         <Route path="/pe/enrollment-schedule" element={<EnrollmentSchedulePage />} />
+
+                        <Route path="/g/view" element={<GradesPage />} />
 
                         {/* --- PROTECTED ROUTES FOR EMPLOYEE ACCOUNTs --- */}
                         <Route path="/um/employees" element={<EmployeeAccountsPage />} />
