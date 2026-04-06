@@ -26,6 +26,7 @@ import { SidebarFooterComponent } from './SidebarFooterComponent';
 
 import './SidebarComponent.css';
 import NotificationsModal from '../Modals/Notifications/NotificationsModal';
+import { setUnreadCount } from '../../store/slices/NotificationSlice';
 
 const sidebarLinks = [
   { label: 'Dashboard', icon: IconLayoutBoard, link: '/dashboard' },
@@ -58,23 +59,23 @@ const sidebarLinks = [
 
 const StudentSidebarComponent = () => {
   const { pathname } = useLocation();
+  const dispatch = useDispatch();
+  const { unreadCount } = useSelector((state) => state.notifications);
 
   // 1. Notification State
   const [notifOpened, setNotifOpened] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
 
-  // 2. Fetch Notification Count
-  useEffect(() => {
-    const getCount = async () => {
-      try {
-        const res = await axiosClient.get('/api/n/data');
-        setUnreadCount(res.data.unread_count);
-      } catch (error) {
-        console.error("Error fetching notification count", error);
-      }
-    };
-    getCount();
-  }, []);
+    useEffect(() => {
+        const fetchCount = async () => {
+            try {
+                const response = await axiosClient.get('/api/n/data');
+                dispatch(setUnreadCount(response.data.unread_count)); 
+            } catch (error) {
+                console.error("Failed to fetch notification count", error);
+            }
+        };
+        fetchCount();
+    }, []);
 
   const links = sidebarLinks.map((item, index) => {
     if (item.type === 'divider') {

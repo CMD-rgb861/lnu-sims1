@@ -44,8 +44,6 @@ const AccountSettingsPage = () => {
     const { user, user_type } = useSelector((state) => state.auth);
     const apiPrefix = user_type === "Student" ? 'api/as/s' : 'api/as/e';
 
-    console.log(apiPrefix);
-
     const [userDetails, setUserDetails] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);

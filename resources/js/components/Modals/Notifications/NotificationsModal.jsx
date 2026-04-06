@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { Modal, Stack, Text, Box, Center, Group, Button, Divider, ScrollArea, Paper, useMantineTheme, useComputedColorScheme, Loader, Badge, ActionIcon, Tooltip } from '@mantine/core';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { IconBell, IconCheck, IconChecks, IconEyeCheck } from '@tabler/icons-react';
 
 import axiosClient from '../../../api/axiosClient';
+import { setUnreadCount } from '../../../store/slices/NotificationSlice';
 
 const NotificationsModal = ({ opened, onClose }) => {
     const theme = useMantineTheme();
     const computedColorScheme = useComputedColorScheme('light');
+    const dispatch = useDispatch();
 
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -17,6 +20,7 @@ const NotificationsModal = ({ opened, onClose }) => {
         try {
             const res = await axiosClient.get('/api/n/data');
             setNotifications(res.data.notifications);
+            dispatch(setUnreadCount(res.data.unread_count));
         } catch (err) {
             console.error(err);
         } finally {
@@ -116,6 +120,7 @@ const NotificationsModal = ({ opened, onClose }) => {
             setNotifications((prev) =>
                 prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
             );
+            dispatch(setUnreadCount(response.data.unread_count));
         } catch (err) {
             console.error("Failed to mark as read", err);
         }
