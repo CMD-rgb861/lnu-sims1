@@ -9,7 +9,8 @@ import {
   Avatar,
   Stack,
   Skeleton,
-  Divider
+  Divider,
+  Badge // Added Badge
 } from '@mantine/core';
 import {
   IconLayoutBoard,
@@ -17,24 +18,25 @@ import {
   IconUserCircle,
   IconSchool,
   IconChalkboardTeacher,
-  IconHelp
+  IconHelp,
+  IconBell // Added IconBell
 } from '@tabler/icons-react';
-import { getDiceBearAvatar } from '../../plugins/dicebear'; 
+import axiosClient from '../../api/axiosClient'; 
 import { SidebarFooterComponent } from './SidebarFooterComponent';
 
-import './SidebarComponent.css'; 
+import './SidebarComponent.css';
+import NotificationsModal from '../Modals/Notifications/NotificationsModal';
 
 const sidebarLinks = [
-
-  { label: 'Dashboard', icon: IconLayoutBoard, link: '/dashboard'},
+  { label: 'Dashboard', icon: IconLayoutBoard, link: '/dashboard' },
   {
     label: 'My Profile',
     icon: IconUserCircle,
     initiallyOpened: false,
     links: [
-      { label: 'Personal Information', link: '/mp/personal-information'},
-      { label: 'Educational Background', link: '/mp/educational-background'},
-      { label: 'Family Background', link: '/mp/family-background'},
+      { label: 'Personal Information', link: '/mp/personal-information' },
+      { label: 'Educational Background', link: '/mp/educational-background' },
+      { label: 'Family Background', link: '/mp/family-background' },
     ],
   },
   {
@@ -42,69 +44,78 @@ const sidebarLinks = [
     icon: IconSchool,
     initiallyOpened: false,
     links: [
-      { label: 'Pre-Enrollment Records', link: '/pe/records'},
-      { label: 'Status Monitoring', link: '/pe/status-monitoring'},
-      { label: 'Advised Subjects', link: '/pe/advised-subjects'},
-      { label: 'Enrollment Schedule', link: '/pe/enrollment-schedule'},
+      { label: 'Pre-Enrollment Records', link: '/pe/records' },
+      { label: 'Status Monitoring', link: '/pe/status-monitoring' },
+      { label: 'Advised Subjects', link: '/pe/advised-subjects' },
+      { label: 'Enrollment Schedule', link: '/pe/enrollment-schedule' },
     ],
   },
-  { label: 'Grades', icon: IconChalkboardTeacher, link: '/g/view'},
+  { label: 'Grades', icon: IconChalkboardTeacher, link: '/g/view' },
   { type: 'divider', label: 'Additional Settings' },
   { label: 'Account Settings', icon: IconUserCog, link: '/as' },
   { label: 'Help', icon: IconHelp, link: '/us' },
 ];
 
 const StudentSidebarComponent = () => {
-    const { pathname } = useLocation(); 
+  const { pathname } = useLocation();
 
-    const links = sidebarLinks.map((item, index) => {
+  // 1. Notification State
+  const [notifOpened, setNotifOpened] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
+  // 2. Fetch Notification Count
+  useEffect(() => {
+    const getCount = async () => {
+      try {
+        const res = await axiosClient.get('/api/n/data');
+        setUnreadCount(res.data.unread_count);
+      } catch (error) {
+        console.error("Error fetching notification count", error);
+      }
+    };
+    getCount();
+  }, []);
+
+  const links = sidebarLinks.map((item, index) => {
     if (item.type === 'divider') {
-        return <Divider size="xs" my="sm" key={`divider-${index}`} label={item.label} labelPosition="left" />;
+      return <Divider size="xs" my="sm" key={`divider-${index}`} label={item.label} labelPosition="left" />;
     }
 
     const IconComponent = item.icon;
 
     if (item.links) {
-      
       const visibleChildLinks = item.links.filter(childLink => {
         if (!childLink.permission) return true;
         return permissions[childLink.permission]?.can_read;
       });
 
-      if (visibleChildLinks.length === 0) {
-        return null;
-      } 
+      if (visibleChildLinks.length === 0) return null;
 
       const isChildActive = visibleChildLinks.some((link) => link.link === pathname);
-      
+
       return (
         <NavLink
-            key={item.label}
-            label={item.label}
-            leftSection={<IconComponent size={16} />}
-            childrenOffset={28}
-            defaultOpened={item.initiallyOpened || isChildActive}
+          key={item.label}
+          label={item.label}
+          leftSection={<IconComponent size={16} />}
+          childrenOffset={28}
+          defaultOpened={item.initiallyOpened || isChildActive}
         >
           {visibleChildLinks.map((link) => (
-                <NavLink
-                    key={link.label}
-                    label={link.label}
-                    component={Link}
-                    to={link.link}
-                    active={pathname === link.link}
-                />
+            <NavLink
+              key={link.label}
+              label={link.label}
+              component={Link}
+              to={link.link}
+              active={pathname === link.link}
+            />
           ))}
         </NavLink>
       );
     }
 
     const isPublic = !item.permission;
-    // const canView = permissions[item.permission]?.can_read;
-
-    if (!isPublic) {
-      return null; 
-    }
+    if (!isPublic) return null;
 
     return (
       <NavLink
@@ -120,13 +131,33 @@ const StudentSidebarComponent = () => {
 
   return (
     <AppShell.Navbar className="navbar">
-        <AppShell.Section className="links" grow component={ScrollArea} mx="-xs">
-            {links}
-        </AppShell.Section>
+      <AppShell.Section className="links" grow component={ScrollArea} mx="-xs">
+        {links}
 
-        <AppShell.Section>
-            <SidebarFooterComponent />
-        </AppShell.Section>
+        {/* 3. Manual Notification NavLink */}
+        <NavLink
+          label="Notifications"
+          leftSection={<IconBell size={16} />}
+          onClick={() => setNotifOpened(true)}
+          rightSection={
+            unreadCount > 0 && (
+              <Badge color="red" variant="filled" size="xs" circle>
+                {unreadCount}
+              </Badge>
+            )
+          } 
+        />
+      </AppShell.Section>
+
+      <AppShell.Section>
+        <SidebarFooterComponent />
+      </AppShell.Section>
+
+      {/* 4. Notification Modal */}
+      <NotificationsModal 
+        opened={notifOpened} 
+        onClose={() => setNotifOpened(false)} 
+      />
     </AppShell.Navbar>
   );
 };

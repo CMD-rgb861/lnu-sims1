@@ -5,6 +5,8 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable; 
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 /**
  * @mixin \Illuminate\Database\Eloquent\Model
@@ -12,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class UserAccount extends Authenticatable
 {
+    use HasApiTokens, Notifiable;
 
     protected $fillable = [
         'id_number',

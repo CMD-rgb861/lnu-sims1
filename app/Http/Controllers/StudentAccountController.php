@@ -17,7 +17,7 @@ use App\Models\Region;
 use App\Models\SchoolYear;
 use App\Models\StudentAccount;
 use App\Models\StudentProfile;
-
+use App\Notifications\NotificationHandler;
 use App\Providers\StudentLogsProvider;
 use App\Providers\UserLogsProvider;
 
@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Storage;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\Password;
 use Yajra\DataTables\Facades\DataTables;
 
 
@@ -433,6 +434,69 @@ class StudentAccountController extends Controller
             ], 500);
         }
 
+    }
+
+    // Update basic account details from the account settings page
+    public function updateAccountDetails(Request $request)
+    {
+        $id = $request->id;
+        $userAccount = StudentAccount::find($id);
+
+        $validated = $request->validate([
+            'email_address' => 'required|email|unique:user_accounts,email_address,' . $userAccount->id,
+            'first_name' => 'required|string|max:255|unique:user_accounts,first_name,' . $userAccount->id,
+            'last_name' => 'required|string|max:255|unique:user_accounts,last_name,' . $userAccount->id,
+        ]);
+
+        $userAccount->update($validated);
+
+        // Log user activity
+        StudentLogsProvider::log(
+            'Updated account preferences',
+            3,
+            'Account Settings'
+        );
+
+        return response()->json([
+            'type'  => 'success',
+            'message' => 'Account preferences updated successfully.',
+        ]);
+    }
+
+    // Update account password from the account settings page
+    public function updateAccountSecurity(Request $request)
+    {
+        $id = $request->id;
+        $userAccount = StudentAccount::find($id);
+
+        $validated = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'confirmed', Password::defaults()],
+        ]);
+
+        $userAccount->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        $userAccount->tokens()->delete();
+
+        // Log user activity
+        StudentLogsProvider::log(
+            'Updated account password',
+            3,
+            'Account Settings'
+        );
+
+        // Generate notification
+        $userAccount->notify(new NotificationHandler(
+            'Updated Account Security', 
+            'You changed your account password.'
+        ));
+
+        return response()->json([
+            'type'  => 'success',
+            'message' => 'Password updated successfully. Please log in again.'
+        ]);
     }
 
     // // Show student profile in student account

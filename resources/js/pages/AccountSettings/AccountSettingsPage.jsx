@@ -19,6 +19,9 @@ import { useNavigate } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
 import AccountSettingsAccountsForm from '../../components/Forms/AccountSettingsAccountsForm';
 import AccountSettingSecurityForm from '../../components/Forms/AccountSettingSecurityForm';
+
+import { updateUser, logoutUser } from '../../store/slices/AuthSlice';
+
 import { IconUserCog } from '@tabler/icons-react';
 
 const AccountSettingsPage = () => {
@@ -33,6 +36,7 @@ const AccountSettingsPage = () => {
     ));
 
     const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     const theme = useMantineTheme();
     const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.sm})`);
@@ -57,31 +61,13 @@ const AccountSettingsPage = () => {
     //     }
     // };
 
-    // // Fetch data from the backend
-    // useEffect(() => {
-    //     const fetchData = async () => {
-    //         setLoading(true);
-    //         try {
-    //             const [userDetailsReponse] = await Promise.all([
-    //             axiosClient.get(`${apiPrefix}/data`),
-    //             ]);
-    //             setUserDetails(userDetailsReponse.data);
-    //         } catch (error) {
-    //             console.error(error);
-    //         } finally {
-    //             setLoading(false);
-    //         }
-    //     };
-    //     fetchData();
-    // }, []);
-
     const handleEditUser = async (values) => {
         setIsSubmitting(true);
         setLoading(true);
         try {
             const payload = { ...values };
             await axiosClient.put(`${apiPrefix}/preferences/update`, payload);
-            await refetchData();
+            window.location.reload();
         } catch (error) {
             console.error(error);
         } finally {
@@ -94,7 +80,7 @@ const AccountSettingsPage = () => {
         setIsSubmitting(true);
         try {
             await axiosClient.put(`${apiPrefix}/security/update`, values);
-            navigate('/');
+            dispatch(logoutUser());
         } catch (error) {
             console.error(error);
         } finally {
@@ -161,6 +147,7 @@ const AccountSettingsPage = () => {
                                     <Text fz="sm" fw={400} c="dimmed">Adjust settings on your user account.</Text>
                                 </Box>
                                 <AccountSettingsAccountsForm 
+                                    key={JSON.stringify(user)}
                                     userDetails={user}
                                     onEditUser={handleEditUser}
                                 />

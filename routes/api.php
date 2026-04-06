@@ -10,6 +10,7 @@ use App\Http\Controllers\EducBackgroundController;
 use App\Http\Controllers\EnrollmentDetailController;
 use App\Http\Controllers\FamBackgroundController;
 use App\Http\Controllers\NationalityController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PreEnrollmentController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\PSGCController;
@@ -33,6 +34,13 @@ Route::prefix('/auth/')->name('auth.')->group(function() {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+
+    // NOTIFICATIONS ROUTES //
+    Route::prefix('/n/')->name('notifications.')->group(function() {
+        Route::get('/data', [NotificationController::class, 'index'])->name('index');
+        Route::post('/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('markAllAsRead');
+        Route::post('/mark-as-read/{id}', [NotificationController::class, 'markAsRead'])->name('markAsRead');
+    });
 
     // NATIONALITY ROUTES //
     Route::get('/nationalities', [NationalityController::class, 'fetchNationalities']);
@@ -153,13 +161,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('/as/')->name('account_settings.')->group(function() {
         // ACCOUNT SETTINGS ROUTES FOR STUDENT ACCOUNT //
         Route::prefix('/s/')->name('student.')->group(function() {
-            Route::get('/data', [StudentAccountController::class, 'fetchAccountDetails'])->name('fetchStudentAccountDetails');
+            Route::get('/data', [StudentAccountController::class, 'fetchAccountDetails'])->name('fetchAccountDetails');
             Route::put('/preferences/update', [StudentAccountController::class, 'updateAccountDetails'])->name('updateAccountDetails');
             Route::put('/security/update', [StudentAccountController::class, 'updateAccountSecurity'])->name('updateAccountSecurity');
         }); 
 
         // ACCOUNT SETTINGS ROUTES FOR EMPLOYEE ACCOUNT //
-        Route::prefix('/s/')->name('student.')->group(function() {
+        Route::prefix('/e/')->name('student.')->group(function() {
             Route::get('/data', [UserAccountController::class, 'fetchAccountDetails'])->name('fetchAccountDetails');
             Route::put('/preferences/update', [UserAccountController::class, 'updateAccountDetails'])->name('updateAccountDetails');
             Route::put('/security/update', [UserAccountController::class, 'updateAccountSecurity'])->name('updateAccountSecurity');

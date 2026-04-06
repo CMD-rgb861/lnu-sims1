@@ -65,7 +65,10 @@ const authSlice = createSlice({
         state.user_type = null;
         state.user_role_level = [];
         state.status = 'idle';
-    }
+    },
+    updateUser: (state, action) => {
+        state.user = { ...state.user, ...action.payload };
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -150,5 +153,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearErrors, forceLogout } = authSlice.actions;
+export const { clearErrors, forceLogout, updateUser } = authSlice.actions;
 export default authSlice.reducer;

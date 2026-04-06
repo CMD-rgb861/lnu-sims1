@@ -9,6 +9,7 @@ use App\Mail\NewEmployeeAccountMail;
 use App\Models\College;
 use App\Models\Program;
 use App\Models\UserAccountRole;
+use App\Notifications\NotificationHandler;
 use App\Providers\UserLogsProvider;
 
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rules\Password;
 use Yajra\DataTables\Facades\DataTables;
 
 class UserAccountController extends Controller
@@ -63,6 +65,69 @@ class UserAccountController extends Controller
 
         // 3. Return a standard JSON response
         return response()->json($formattedAccounts);
+    }
+
+    // Update basic account details from the account settings page
+    public function updateAccountDetails(Request $request)
+    {
+        $id = $request->id;
+        $userAccount = UserAccount::find($id);
+
+        $validated = $request->validate([
+            'email_address' => 'required|email|unique:user_accounts,email_address,' . $userAccount->id,
+            'first_name' => 'required|string|max:255|unique:user_accounts,first_name,' . $userAccount->id,
+            'last_name' => 'required|string|max:255|unique:user_accounts,last_name,' . $userAccount->id,
+        ]);
+
+        $userAccount->update($validated);
+
+        // Log user activity
+        UserLogsProvider::log(
+            'Updated account password',
+            3,
+            'Account Settings'
+        );
+
+        return response()->json([
+            'type'  => 'success',
+            'message' => 'Account preferences updated successfully.'
+        ]);
+    }
+
+    // Update account password from the account settings page
+    public function updateAccountSecurity(Request $request)
+    {
+        $id = $request->id;
+        $userAccount = UserAccount::find($id);
+
+        $validated = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'confirmed', Password::defaults()],
+        ]);
+
+        $userAccount->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        $userAccount->tokens()->delete();
+
+        // Log user activity
+        UserLogsProvider::log(
+            'Updated account password',
+            3,
+            'Account Settings'
+        );
+
+        // Generate notification
+        $userAccount->notify(new NotificationHandler(
+            'Updated Account Security', 
+            'You changed your account password.'
+        ));
+
+        return response()->json([
+            'type'  => 'success',
+            'message' => 'Password updated successfully. Please log in again.'
+        ]);
     }
 
     // // Create employee accounts

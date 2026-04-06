@@ -22,16 +22,19 @@ import { IconCheck, IconX } from '@tabler/icons-react';
         { re: /[$&+,:;=?@#|'<>.^*()%!-]/, label: 'Includes special symbol' },
     ];
 
-    function getStrength(password) {
-    let multiplier = password.length > 5 ? 0 : 1;
+    function getStrength(value) {
 
-    requirements.forEach((requirement) => {
-        if (!requirement.re.test(password)) {
-        multiplier += 1;
-        }
-    });
+        if (!value || typeof value !== 'string') return 0;
 
-    return Math.max(100 - (100 / (requirements.length + 1)) * multiplier, 10);
+        let multiplier = value.length > 5 ? 0 : 1;
+
+        requirements.forEach((requirement) => {
+            if (!requirement.re.test(value)) {
+            multiplier += 1;
+            }
+        });
+
+        return Math.max(100 - (100 / (requirements.length + 1)) * multiplier, 10);
     }
 
     function getStrengthColor(strength) {
@@ -65,17 +68,17 @@ import { IconCheck, IconX } from '@tabler/icons-react';
     const form = useForm({
         initialValues: {
             current_password: '',
-            new_password: '',
-            confirm_password: '',
+            password: '',
+            password_confirmation: '',
         },
         validate: {
         current_password: (value) => value.trim().length > 0 ? null : 'Current password is required',
-        new_password: (value) => {
+        password: (value) => {
             if (value.trim().length === 0) return 'New password is required';
             if (getStrength(value) < 100 && value.length < 6) return 'Password is too weak'; 
             return null;
         },
-        confirm_password: (value, values) => value !== values.new_password ? 'Passwords did not match' : null,
+        password_confirmation: (value, values) => value !== values.password ? 'Passwords did not match' : null,
         },
     });
 
@@ -85,7 +88,7 @@ import { IconCheck, IconX } from '@tabler/icons-react';
     };
 
     // Calculate strength dynamically based on form value
-    const strength = getStrength(form.values.new_password);
+    const strength = getStrength(form.values.password);
     const color = getStrengthColor(strength);
 
     return (
@@ -113,11 +116,11 @@ import { IconCheck, IconX } from '@tabler/icons-react';
                                                 withAsterisk
                                                 label="New Password"
                                                 placeholder="Your new password"
-                                                {...form.getInputProps('new_password')}
+                                                {...form.getInputProps('password')}
                                             />
                                             
                                             {/* 3. Strength Indicator Block */}
-                                            {form.values.new_password.length > 0 && (
+                                            {form.values.password.length > 0 && (
                                                 <Box mt="xs">
                                                     <Group gap={5} grow>
                                                         {/* This creates the segmented bar effect */}
@@ -131,13 +134,13 @@ import { IconCheck, IconX } from '@tabler/icons-react';
                                                     
                                                     <PasswordRequirement 
                                                         label="Includes at least 6 characters" 
-                                                        meets={form.values.new_password.length > 5} 
+                                                        meets={form.values.password.length > 5} 
                                                     />
                                                     {requirements.map((requirement, index) => (
                                                         <PasswordRequirement
                                                             key={index}
                                                             label={requirement.label}
-                                                            meets={requirement.re.test(form.values.new_password)}
+                                                            meets={requirement.re.test(form.values.password)}
                                                         />
                                                     ))}
                                                 </Box>
@@ -149,7 +152,7 @@ import { IconCheck, IconX } from '@tabler/icons-react';
                                             withAsterisk
                                             label="Confirm New Password"
                                             placeholder="Confirm new password"
-                                            {...form.getInputProps('confirm_password')}
+                                            {...form.getInputProps('password_confirmation')}
                                         />
                                         </Grid.Col>
                                     </Grid>

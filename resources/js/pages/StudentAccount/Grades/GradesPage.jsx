@@ -132,13 +132,11 @@ const GradesPage = () => {
                 )}
 
                 {/* Filters Section */}
-                <Grid align="center" mb="xl">
-
+                <Grid align="center" mb="xl" >
                     <Grid.Col span={{ base: 12, md: 3 }}>
                         <TextInput
                             placeholder="Search course code or title..."
                             size="sm"
-                            leftSection={<IconSearch size={14} />}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.currentTarget.value)}
                             clearable
