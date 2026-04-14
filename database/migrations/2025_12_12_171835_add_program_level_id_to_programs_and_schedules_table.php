@@ -11,15 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Schema::table('programs', function (Blueprint $table) {
-        //     $table->unsignedBigInteger('program_level_id')->nullable()->after('coordinator_id');
-        //     $table->foreign('program_level_id')->references('id')->on('program_levels')->nullOnDelete();
-        // });
-
-        Schema::table('schedules', function (Blueprint $table) {
-            $table->unsignedBigInteger('program_level_id')->nullable()->after('id');
+        Schema::table('programs', function (Blueprint $table) {
+            $table->unsignedBigInteger('program_level_id')->nullable()->after('coordinator_id');
             $table->foreign('program_level_id')->references('id')->on('program_levels')->nullOnDelete();
         });
+
+        // Schema::table('schedules', function (Blueprint $table) {
+        //     $table->unsignedBigInteger('program_level_id')->nullable()->after('id');
+        //     $table->foreign('program_level_id')->references('id')->on('program_levels')->nullOnDelete();
+        // });
     }
 
     /**

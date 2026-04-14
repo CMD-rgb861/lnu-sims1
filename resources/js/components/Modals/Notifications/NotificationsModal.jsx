@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { Modal, Stack, Text, Box, Center, Group, Button, Divider, ScrollArea, Paper, useMantineTheme, useComputedColorScheme, Loader, Badge, ActionIcon, Tooltip } from '@mantine/core';
+import { Modal, Stack, Text, Box, Center, Group, Button, Divider, 
+         ScrollArea, Paper, useMantineTheme, useComputedColorScheme, 
+         Loader, Badge, ActionIcon, Tooltip, Alert } from '@mantine/core';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { IconBell, IconCheck, IconChecks, IconEyeCheck } from '@tabler/icons-react';
+import { IconBell, IconCheck, IconChecks, IconEyeCheck, IconAlertCircle } from '@tabler/icons-react';
 
 import axiosClient from '../../../api/axiosClient';
 import { setUnreadCount } from '../../../store/slices/NotificationSlice';
@@ -105,6 +107,7 @@ const NotificationsModal = ({ opened, onClose }) => {
             await axiosClient.post('/api/n/mark-all-as-read');
             setLoading(true);
             fetchNotifications();
+            dispatch(setUnreadCount(response.data.unread_count));
         } catch (err) {
             console.error(err);
         }
@@ -152,6 +155,11 @@ const NotificationsModal = ({ opened, onClose }) => {
                         ) : (
                             <>
                                 {/* UNREAD SECTION */}
+                                {unreadNotifications.length == 0 && (
+                                    <Alert variant="light" color="blue" title="Alert" icon={<IconAlertCircle />}>
+                                        No new notifications yet
+                                    </Alert>
+                                )}
                                 {unreadNotifications.length > 0 && (
                                     <Box>
                                         <Group>
