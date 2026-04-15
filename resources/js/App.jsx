@@ -25,6 +25,7 @@ import AdvisedSubjectsPage from './pages/StudentAccount/PreEnrollment/AdvisedSub
 import EnrollmentSchedulePage from './pages/StudentAccount/PreEnrollment/EnrollmentSchedulePage';
 import GradesPage from './pages/StudentAccount/Grades/GradesPage';
 import AccountSettingsPage from './pages/AccountSettings/AccountSettingsPage';
+import EvaluationPage from './pages/StudentAccount/Evaluation/EvaluationPage';
 
 function App() {
     const dispatch = useDispatch();
@@ -96,6 +97,8 @@ function App() {
                         <Route path="/pe/enrollment-schedule" element={<EnrollmentSchedulePage />} />
 
                         <Route path="/g/view" element={<GradesPage />} />
+
+                        <Route path="/eval/view" element={<EvaluationPage />} />
 
                         <Route path="/as" element={<AccountSettingsPage />} />
 

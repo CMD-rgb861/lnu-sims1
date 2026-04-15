@@ -175,5 +175,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     });
     
-    
+    Route::prefix('/g/')->name('evaluation.')->group(function() {
+        
+    });
 });
