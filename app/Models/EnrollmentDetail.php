@@ -7,8 +7,8 @@ use Illuminate\Support\Carbon;
 
 class EnrollmentDetail extends Model
 {
-     protected $fillable = [
-        'user_account_id',
+    protected $fillable = [
+        'student_account_id',
         'program_id',
         'curriculum_id',
         'year_level',
