@@ -23,7 +23,8 @@ const EvaluationPage = () => {
     const [subjects, setSubjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedTerm, setSelectedTerm] = useState('all');
+    const [terms, setTerms] = useState([]);
+    const [selectedTerm, setSelectedTerm] = useState(null);
     const [availabilityFilter, setAvailabilityFilter] = useState('all');
 
     // Sample data to use as a graceful fallback while backend isn't wired
@@ -50,28 +51,86 @@ const EvaluationPage = () => {
         let mounted = true;
         setLoading(true);
 
-        // Fetch enrollments for the logged-in student. This endpoint returns rows from
-        // the enrollment_courses table (via StudentEvaluationController) and includes
-        // the id_no column used by the evaluation page.
-        axiosClient.get('/api/g/fetch/enrollments')
+        // Fetch enrollments for the logged-in student. Server will apply term and availability filters.
+        axiosClient.get('/api/g/fetch/enrollments', {
+            params: {
+                term: selectedTerm || 'current',
+                availability: availabilityFilter || 'all'
+            }
+        })
             .then(res => {
                 if (!mounted) return;
-                const data = res?.data;
+                const payload = res?.data || {};
+                const data = Array.isArray(payload.enrollments) ? payload.enrollments : payload;
+                // if terms provided, set them and default selectedTerm
+                if (payload.terms) {
+                    setTerms(payload.terms.map(t => ({ id: t.id, name: `S.Y. ${t.school_year_from}–${t.school_year_to} - ${t.semester}` })));
+                    if (payload.active_term_id && !selectedTerm) {
+                        setSelectedTerm(payload.active_term_id);
+                    }
+                }
+
                 if (Array.isArray(data) && data.length) {
                     // Map backend enrollment rows to the frontend 'subject' shape expected by this page
                     const mapped = data.map(e => {
                         const code = e.course_code || (e.course && (e.course.course_code || e.course.code)) || '';
                         const title = e.course_description || (e.course && (e.course.course_description || e.course.title)) || '';
-                        const instructorName = e.instructor?.display_name || ((e.instructor && (e.instructor.first_name || e.instructor.last_name)) ? `${e.instructor.first_name || ''} ${e.instructor.last_name || ''}`.trim() : (e.instructor?.name || e.instructor || 'Unknown'));
+
+                        // Prefer relation name, then raw instructor_text, then generic fallbacks
+                        const instructorName = e.instructor?.display_name
+                            || ((e.instructor && (e.instructor.first_name || e.instructor.last_name)) ? `${e.instructor.first_name || ''} ${e.instructor.last_name || ''}`.trim() : null)
+                            || e.instructor?.name
+                            || e.instructor_text
+                            || (typeof e.instructor === 'string' ? e.instructor : null)
+                            || 'Unknown';
+
+                        // try to extract instructor's assigned programs and college (from user_account_role relations)
+                        const roles = (e.instructor && e.instructor.user_account_role) ? e.instructor.user_account_role : [];
+                        const programSet = new Set();
+                        roles.forEach(r => {
+                            const p1 = r?.role_program_coordinator?.program_name || r?.role_enrolling_teacher?.program_name;
+                            if (p1) programSet.add(p1);
+                        });
+                        // fallback: if no programs from roles, use enrollment's program relation
+                        if (programSet.size === 0 && e.program && e.program.program_name) {
+                            programSet.add(e.program.program_name);
+                        }
+                        const programs = Array.from(programSet);
+                        // college fallback: from role_dean or from enrollment's program->department->college
+                        let collegeName = roles.map(r => r?.role_dean?.college_name).filter(Boolean)[0] || '';
+                        if (!collegeName && e.program && e.program.department && e.program.department.college) {
+                            collegeName = e.program.department.college.college_name || '';
+                        }
+
+                        // program/department from enrollment's flattened fields (preferred)
+                        const programId = e.program_id ?? e.program?.id ?? null;
+                        const programName = e.program_name ?? e.program?.program_name ?? null;
+                        const departmentName = e.department_name ?? e.program?.department?.dept_name ?? null;
+                        const collegeNameFromProgram = e.college_name ?? e.program?.department?.college?.college_name ?? '';
+
+                        // Build a nicer term label fallback: prefer schoolYear.display_name, then year_level as 'Year X', then raw id
+                        let termName = '—';
+                        if (e.school_year && e.school_year.display_name) {
+                            termName = e.school_year.display_name;
+                        } else if (e.year_level) {
+                            termName = `Year ${e.year_level}`;
+                        } else if (e.school_year_id) {
+                            termName = String(e.school_year_id);
+                        }
 
                         return {
                             id: e.id, // enrollment row id
                             id_no: e.id_no, // the id_no column (used as foreign id)
                             code,
                             title,
-                            instructor: { id: e.id_no, name: instructorName },
-                            term: { id: e.school_year_id, name: e.school_year?.display_name || String(e.school_year_id) },
-                            is_available: true,
+                            year_level: e.year_level || null,
+                            program_id: programId,
+                            program_name: programName,
+                            department_name: departmentName,
+                            college_name: collegeNameFromProgram || collegeName,
+                            instructor: { id: e.id_no, name: instructorName, programs, college: collegeName },
+                            term: { id: e.school_year_id, name: termName },
+                            is_available: typeof e.is_available !== 'undefined' ? e.is_available : true,
                         };
                     });
 
@@ -90,7 +149,7 @@ const EvaluationPage = () => {
             .finally(() => mounted && setLoading(false));
 
         return () => { mounted = false; };
-    }, []);
+    }, [selectedTerm, availabilityFilter]);
 
     function openEvaluation(subject) {
         setSelectedSubject(subject);
@@ -144,13 +203,13 @@ const EvaluationPage = () => {
                         {/* Term selector and availability filter */}
                         <Group mb="md" align="center" spacing="sm">
                             <Select
-                                placeholder="Filter by term/semester"
-                                data={[{ value: 'all', label: 'All Terms' }, ...Array.from(new Map(subjects.map(s => [s.term?.id, s.term])).values()).map(t => ({ value: String(t.id), label: t.name }))]}
-                                value={selectedTerm}
-                                onChange={(v) => setSelectedTerm(v || 'all')}
-                                sx={{ minWidth: 220 }}
+                                placeholder="Select term/semester"
+                                data={terms.map(t => ({ value: String(t.id), label: t.name }))}
+                                value={selectedTerm ? String(selectedTerm) : undefined}
+                                onChange={(v) => setSelectedTerm(v ? Number(v) : null)}
+                                sx={{ minWidth: 320 }}
                                 searchable
-                                clearable
+                                clearable={false}
                             />
 
                             <Select
@@ -167,9 +226,7 @@ const EvaluationPage = () => {
 
                             <Select
                                 placeholder="Select a subject to evaluate"
-                                data={subjects
-                                    .filter(s => (selectedTerm === 'all' || String(s.term?.id) === String(selectedTerm)))
-                                    .map(s => ({ value: String(s.id), label: `${s.code} — ${s.title}`, disabled: !(s.is_available === undefined ? true : s.is_available) }))}
+                                data={subjects.map(s => ({ value: String(s.id), label: `${s.code} — ${s.title}`, disabled: !(s.is_available === undefined ? true : s.is_available) }))}
                                 searchable
                                 clearable
                                 nothingfound="No subjects"
@@ -186,14 +243,7 @@ const EvaluationPage = () => {
                         </Group>
 
                         <SimpleGrid cols={2} breakpoints={[{ maxWidth: 'sm', cols: 1 }]}> 
-                            {subjects
-                                .filter(s => (selectedTerm === 'all' || String(s.term?.id) === String(selectedTerm)))
-                                .filter(s => {
-                                    if (availabilityFilter === 'all') return true;
-                                    const isAvailable = s.is_available === undefined ? true : s.is_available;
-                                    return availabilityFilter === 'available' ? isAvailable : !isAvailable;
-                                })
-                                .map((s) => {
+                            {subjects.map((s) => {
                                 const isAvailable = s.is_available === undefined ? true : s.is_available;
                                 return (
                                     <Card key={s.id} shadow="sm" padding="md" radius="md" withBorder style={{ opacity: isAvailable ? 1 : 0.6 }}>

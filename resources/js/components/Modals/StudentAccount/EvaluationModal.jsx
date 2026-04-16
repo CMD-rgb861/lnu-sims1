@@ -157,18 +157,30 @@ const EvaluationModal = ({ opened, onClose, subject, instructor, term, onSubmitt
                   <Text fw={600}>{instructor?.name || '—'}</Text>
                 </Box>
                 <Box>
-                  <Text fz="xs" c="dimmed">College/Department</Text>
-                  <Text fw={600}>{subject?.department || '—'}</Text>
+                  <Text fz="xs" c="dimmed">College / Department</Text>
+                  <Text fw={600}>{
+                    // prefer enrollment program -> department -> college
+                    subject?.program_name ? `${subject.program_name}${subject.department_name ? ` — ${subject.department_name}` : ''}` : (
+                      subject?.college_name ? subject.college_name : ((instructor?.college && instructor.college) || '—')
+                    )
+                  }</Text>
                 </Box>
 
                 <Box>
-                  <Text fz="xs" c="dimmed">Course Code/Title</Text>
+                  <Text fz="xs" c="dimmed">Course Code / Title</Text>
                   <Text fw={600}>{subject.code} — {subject.title}</Text>
                 </Box>
                 <Box>
                   <Text fz="xs" c="dimmed">Program Level / Term</Text>
-                  <Text fw={600}>{subject?.program || '—'} · {term?.name || '—'}</Text>
+                  <Text fw={600}>{subject?.year_level ? `Year ${subject.year_level}` : (subject?.program || '—')} · {term?.name || '—'}</Text>
                 </Box>
+                {/* If instructor has programs, show them below as small caption */}
+                {instructor?.programs && instructor.programs.length > 0 && (
+                  <Box style={{ gridColumn: '1 / -1' }}>
+                    <Text fz="xs" c="dimmed">Instructor Program(s)</Text>
+                    <Text fw={600}>{instructor.programs.join(', ')}</Text>
+                  </Box>
+                )}
               </SimpleGrid>
             </Paper>
 

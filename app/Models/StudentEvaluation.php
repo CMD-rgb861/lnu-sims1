@@ -44,6 +44,11 @@ class StudentEvaluation extends Model
         return $this->belongsTo(Course::class, 'course_id');
     }
 
+    public function program()
+    {
+        return $this->belongsTo(Program::class, 'program_id');
+    }
+
     /**
      * Instructor relation using id_no (populated on enrollment).
      */
