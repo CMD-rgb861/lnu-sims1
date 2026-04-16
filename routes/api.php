@@ -19,6 +19,7 @@ use App\Http\Controllers\StudentGradeController;
 use App\Http\Controllers\StudentScheduleController;
 use App\Http\Controllers\UserAccountController;
 use App\Http\Controllers\UserRoleController;
+use App\Http\Controllers\StudentEvaluationController;
 
 // Public routes (no auth needed)
 Route::post('/', [AuthController::class, 'index']);
@@ -176,6 +177,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     
     Route::prefix('/g/')->name('evaluation.')->group(function() {
-        
+        // Student evaluation endpoints
+        Route::get('/fetch/enrollments', [StudentEvaluationController::class, 'index'])->name('fetchEnrollments');
     });
 });

@@ -4,8 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class EnrollmentCourse extends Model
+class StudentEvaluation extends Model
 {
+    // This model maps to enrollment_courses to provide a focused resource for the
+    // student evaluation page without changing the existing EnrollmentCourse model.
+    protected $table = 'enrollment_courses';
+
     protected $fillable = [
         'school_year_id',
         'id_number',
@@ -21,8 +25,8 @@ class EnrollmentCourse extends Model
         'final_grade',
         'inc',
         'section_code',
-        'id_no',
         'instructor',
+        'id_no',
         'schedule_time',
         'schedule_days',
         'schedule_days_no',
@@ -40,19 +44,8 @@ class EnrollmentCourse extends Model
         return $this->belongsTo(Course::class, 'course_id');
     }
 
-    public function program()
-    {
-        return $this->belongsTo(Program::class, 'program_id');
-    }
-
-    public function curriculum()
-    {
-        return $this->belongsTo(Curriculum::class, 'curriculum_id');
-    }
-
     /**
-     * Instructor relationship using id_no column.
-     * id_no is populated on enrollment and references user_accounts.id (instructor user)
+     * Instructor relation using id_no (populated on enrollment).
      */
     public function instructor()
     {
