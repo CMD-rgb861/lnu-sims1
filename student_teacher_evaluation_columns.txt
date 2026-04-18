@@ -1,0 +1,142 @@
+Student Evaluation to Teachers - Current Scope Blueprint
+Scope: finish student-side teacher evaluation page only.
+
+Use this as the implementation guide for tables, columns, and tasks.
+
+============================================================
+1) TABLES YOU NEED NOW
+============================================================
+A. Keep existing: evaluation_schedules
+Purpose:
+- Controls open/close evaluation period per school year (term).
+
+Existing columns:
+- id
+- school_year_id
+- date_from
+- date_to
+- date_extension
+- created_at
+- updated_at
+
+How to use it now:
+- Evaluation is open if current date is between date_from and effective_end_date.
+- effective_end_date = date_extension if not null, else date_to.
+
+
+B. Create: evaluation_submissions (main/header)
+Purpose:
+- One row per submitted student evaluation for a specific subject/teacher/term.
+
+Required columns:
+- id (bigint PK)
+- student_id_number (string, index)
+- subject_id (bigint, index)                  // enrollment_courses.id
+- instructor_id (bigint, nullable, index)     // user_accounts.id via enrollment id_no
+- term_id (unsigned int, index)               // school_year_id
+- total_score (unsigned smallint)
+- max_score (unsigned smallint)
+- rating_percentage (decimal(5,2) or unsigned tinyint)
+- comment (text, nullable)
+- submitted_at (timestamp, index)
+- status (string/enum, default 'submitted')
+- created_at
+- updated_at
+
+Important constraint:
+- unique(student_id_number, subject_id, term_id)
+  Prevents duplicate evaluation for same student+subject+term.
+
+
+C. Create: evaluation_submission_answers (detail)
+Purpose:
+- One row per answered question.
+
+Required columns:
+- id (bigint PK)
+- submission_id (bigint FK, index)
+- question_key (string, index)   // for current hardcoded modal keys like s0_i0
+- score (unsigned tinyint)       // 1..5
+- created_at
+- updated_at
+
+Constraint:
+- unique(submission_id, question_key)
+  Prevents duplicate score entry for same question in one submission.
+
+Why question_key now:
+- Your current modal sends answers as keys like s0_i0.
+- This lets you ship now without building admin question tables yet.
+
+============================================================
+2) API ENDPOINTS YOU NEED NOW
+============================================================
+A. Existing GET (already present)
+- GET /api/g/fetch/enrollments
+  Source: StudentEvaluationController@index
+
+B. Add POST for submit (needed)
+- POST /api/student/evaluations
+
+Expected request fields (based on current modal payload):
+- subject_id
+- instructor_id
+- term_id
+- answers (object: question_key => score)
+- comment
+- total_score
+- rating_percentage
+
+Server-side rules for POST:
+- Verify authenticated student.
+- Recompute total_score/max_score/rating_percentage on server.
+- Validate each score is integer 1..5.
+- Check evaluation schedule is open for term_id.
+- Enforce unique submission (student_id_number, subject_id, term_id).
+- Save header + answer rows in one DB transaction.
+
+============================================================
+3) CONTROLLER LOGIC CHECKLIST (CURRENT FEATURE ONLY)
+============================================================
+- In enrollment fetch:
+  - Keep instructor assignment checks.
+  - Add schedule-window check for is_available.
+- In submit endpoint:
+  - Use transaction for header + details.
+  - Handle duplicate submission gracefully (409 or validation error).
+  - Return clear success JSON.
+
+============================================================
+4) INDEXES TO KEEP IT FAST
+============================================================
+evaluation_submissions:
+- unique(student_id_number, subject_id, term_id)
+- index(term_id)
+- index(instructor_id)
+- index(subject_id)
+- index(submitted_at)
+
+evaluation_submission_answers:
+- unique(submission_id, question_key)
+- index(submission_id)
+- index(question_key)
+
+============================================================
+5) WHAT YOU CAN SKIP FOR NOW
+============================================================
+- Admin-managed dynamic questionnaire tables (forms/sections/items)
+- Weighted scoring rules
+- Cross-feature reporting tables
+
+You can add those later without blocking this student feature.
+
+============================================================
+6) DEFINITION OF DONE (FOR YOUR CURRENT GOAL)
+============================================================
+1. Student can only evaluate subjects that are available by schedule + instructor assignment.
+2. Student submits once per subject per term.
+3. Submission saves in evaluation_submissions.
+4. Per-question scores save in evaluation_submission_answers.
+5. Reloading page reflects submitted state in UI.
+6. Validation and duplicate protection handled server-side.
+7. Basic indexes/constraints are in place.

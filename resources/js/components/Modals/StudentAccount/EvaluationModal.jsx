@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Modal, Stack, Text, Textarea, Button, Group, Loader, Alert, SimpleGrid, Box, Divider, Paper, LoadingOverlay, Stepper } from '@mantine/core';
+import { Modal, Stack, Text, Textarea, Button, Group, Loader, Alert, SimpleGrid, Box, Paper, LoadingOverlay, Progress } from '@mantine/core';
 import { IconCheck } from '@tabler/icons-react';
 import axiosClient from '../../../api/axiosClient';
 
@@ -117,6 +117,25 @@ const EvaluationModal = ({ opened, onClose, subject, instructor, term, onSubmitt
     return max > 0 ? Math.round((total / max) * 100) : 0;
   };
 
+  const totalSteps = sections.length + 1;
+  const reviewStepIndex = sections.length;
+  const progressValue = totalSteps > 1 ? (activeStep / (totalSteps - 1)) * 100 : 100;
+  const activeSection = activeStep < sections.length ? sections[activeStep] : null;
+  const isReviewStep = activeStep === reviewStepIndex;
+  const affiliationLabel = subject?.department_name && subject?.program_name
+    ? `${subject.department_name} - ${subject.program_name}`
+    : (subject?.department_name || subject?.program_name || subject?.college_name || instructor?.college || '—');
+  const programLevelLabel = subject?.year_level ? `Year ${subject.year_level}` : (subject?.program_name || '—');
+  const shortStepLabels = ['Management', 'Content & Pedagogy', 'Commitment', 'Review'];
+  const answeredInActiveSection = activeStep < sections.length
+    ? sections[activeStep].items.filter((_, iIdx) => {
+      const v = answers[`s${activeStep}_i${iIdx}`];
+      return v || v === 0;
+    }).length
+    : 0;
+  const totalInActiveSection = activeStep < sections.length ? sections[activeStep].items.length : 0;
+  const canProceedToNext = isReviewStep || answeredInActiveSection === totalInActiveSection;
+
   const ratingLabel = (pct) => {
     if (pct >= 91) return 'Outstanding';
     if (pct >= 76) return 'Very Satisfactory';
@@ -125,17 +144,78 @@ const EvaluationModal = ({ opened, onClose, subject, instructor, term, onSubmitt
     return 'Poor';
   };
 
+  const infoValueStyle = {
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
+    lineHeight: 1.35,
+  };
+
+  const infoLabelStyle = {
+    minHeight: 18,
+    lineHeight: 1.2,
+  };
+
   return (
     <Modal
       opened={opened}
       onClose={onClose}
-      title={subject ? `Evaluate: ${subject.code} — ${subject.title}` : 'Evaluate Subject'}
+      title={subject ? (
+        <Stack spacing={3} style={{ minWidth: 0 }}>
+          <Group position="apart" align="center" spacing="xs" noWrap>
+            <Text fw={700} size="sm">Evaluation progress</Text>
+            <Group spacing={8} noWrap>
+              <Text size="xs" c="dimmed">Step {activeStep + 1} of {totalSteps}</Text>
+              {activeStep < sections.length && (
+                <Text size="xs" fw={600} c={canProceedToNext ? 'teal' : 'dimmed'}>
+                  Answered {answeredInActiveSection}/{totalInActiveSection}
+                </Text>
+              )}
+            </Group>
+          </Group>
+
+          <Progress value={progressValue} size="xs" radius="xl" color="green" />
+
+          <Box
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+              gap: 8,
+              alignItems: 'center',
+            }}
+          >
+            {sections.map((section, sIdx) => {
+              const isCompleted = sIdx < activeStep;
+              const isActive = sIdx === activeStep;
+
+              return (
+                <Box key={section.title} style={{ textAlign: 'center', minWidth: 0 }}>
+                  <Text size="xs" fw={isActive ? 700 : 500} c={isCompleted || isActive ? 'dark' : 'dimmed'} lineClamp={1}>
+                    {shortStepLabels[sIdx] || section.title.replace(/^\w\.\s*/, '')}
+                  </Text>
+                </Box>
+              );
+            })}
+
+            <Box style={{ textAlign: 'center', minWidth: 0 }}>
+              <Text size="xs" fw={activeStep === reviewStepIndex ? 700 : 500} c={activeStep === reviewStepIndex ? 'dark' : 'dimmed'} lineClamp={1}>
+                Review & Submit
+              </Text>
+            </Box>
+          </Box>
+        </Stack>
+      ) : 'Faculty Evaluation'}
       size="xl"
       radius="md"
       centered
       closeOnEscape={!submitting}
       closeOnClickOutside={!submitting}
-      withCloseButton={!submitting}
+      // Keep only the footer Cancel button as the close control.
+      withCloseButton={false}
+      styles={{
+        header: { alignItems: 'flex-start', paddingBottom: 8 },
+        title: { width: '100%', marginRight: 8 },
+        body: { paddingTop: 8 },
+      }}
     >
       {!subject ? (
         <Stack align="center">
@@ -145,204 +225,245 @@ const EvaluationModal = ({ opened, onClose, subject, instructor, term, onSubmitt
         <Paper p="md" radius="md" withBorder style={{ position: 'relative' }}>
           <LoadingOverlay visible={submitting} overlayProps={{ radius: 'md', blur: 2 }} />
 
-          <Stack spacing="sm">
-            <Text fw={700} size="lg">{subject.code} — {subject.title}</Text>
-            <Text size="sm" c="dimmed">Instructor: {instructor?.name} · Term: {term?.name}</Text>
+          <Stack spacing="md" style={{ maxHeight: '72vh' }}>
+            <Box style={{ overflowY: 'auto', paddingRight: 4 }}>
+              <Stack spacing="md">
+            <Paper withBorder radius="md" p="md">
+              <Stack spacing="xs">
+                <Text fw={700} size="sm">A. Faculty Information</Text>
 
-            {/* Faculty Information (paper form header) */}
-            <Paper withBorder radius="sm" p="sm">
-              <SimpleGrid cols={2} spacing="xs">
-                <Box>
-                  <Text fz="xs" c="dimmed">Name of Faculty being Evaluated</Text>
-                  <Text fw={600}>{instructor?.name || '—'}</Text>
-                </Box>
-                <Box>
-                  <Text fz="xs" c="dimmed">College / Department</Text>
-                  <Text fw={600}>{
-                    // prefer enrollment program -> department -> college
-                    subject?.program_name ? `${subject.program_name}${subject.department_name ? ` — ${subject.department_name}` : ''}` : (
-                      subject?.college_name ? subject.college_name : ((instructor?.college && instructor.college) || '—')
-                    )
-                  }</Text>
-                </Box>
-
-                <Box>
-                  <Text fz="xs" c="dimmed">Course Code / Title</Text>
-                  <Text fw={600}>{subject.code} — {subject.title}</Text>
-                </Box>
-                <Box>
-                  <Text fz="xs" c="dimmed">Program Level / Term</Text>
-                  <Text fw={600}>{subject?.year_level ? `Year ${subject.year_level}` : (subject?.program || '—')} · {term?.name || '—'}</Text>
-                </Box>
-                {/* If instructor has programs, show them below as small caption */}
-                {instructor?.programs && instructor.programs.length > 0 && (
-                  <Box style={{ gridColumn: '1 / -1' }}>
-                    <Text fz="xs" c="dimmed">Instructor Program(s)</Text>
-                    <Text fw={600}>{instructor.programs.join(', ')}</Text>
+                <Box
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    gap: 12,
+                  }}
+                >
+                  <Box style={{ minWidth: 0 }}>
+                    <Text fz="xs" c="dimmed" style={infoLabelStyle}>Name of Faculty being Evaluated</Text>
+                    <Text fw={600} style={infoValueStyle}>{instructor?.name || '—'}</Text>
                   </Box>
-                )}
-              </SimpleGrid>
+
+                  <Box style={{ minWidth: 0 }}>
+                    <Text fz="xs" c="dimmed" style={infoLabelStyle}>College/Department</Text>
+                    <Text fw={600} style={infoValueStyle}>{affiliationLabel}</Text>
+                  </Box>
+
+                  <Box style={{ minWidth: 0 }}>
+                    <Text fz="xs" c="dimmed" style={infoLabelStyle}>Course Code/Title</Text>
+                    <Text fw={600} style={infoValueStyle}>{`${subject?.code || '—'} — ${subject?.title || '—'}`}</Text>
+                  </Box>
+
+                  <Box style={{ minWidth: 0 }}>
+                    <Text fz="xs" c="dimmed" style={infoLabelStyle}>Program Level</Text>
+                    <Text fw={600} style={infoValueStyle}>{programLevelLabel}</Text>
+                  </Box>
+
+                  <Box style={{ minWidth: 0, gridColumn: '1 / -1' }}>
+                    <Text fz="xs" c="dimmed" style={infoLabelStyle}>Semester or Term/Academic Year</Text>
+                    <Text fw={600} style={infoValueStyle}>{term?.name || '—'}</Text>
+                  </Box>
+                </Box>
+              </Stack>
             </Paper>
 
-            <Alert color="gray" variant="light">
-              <Text>Please evaluate your teacher objectively using the following scale:</Text>
-              <Text size="sm" mt="xs">5 = Outstanding, 4 = Very Satisfactory, 3 = Satisfactory, 2 = Fair, 1 = Poor.</Text>
-            </Alert>
+            <Paper withBorder radius="md" p="sm">
+              <Stack spacing="xs">
+                <Text fw={700} size="sm">B. Rating Scale</Text>
+                <Box style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 580 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12, textAlign: 'center' }}>Scale</th>
+                        <th style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12, textAlign: 'left' }}>Qualitative Description</th>
+                        <th style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12, textAlign: 'left' }}>Operational Definition</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12, textAlign: 'center' }}>5</td>
+                        <td style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12 }}>Always manifested</td>
+                        <td style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12 }}>Evident in nearly all relevant situations (91-100% of instances).</td>
+                      </tr>
+                      <tr>
+                        <td style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12, textAlign: 'center' }}>4</td>
+                        <td style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12 }}>Often manifested</td>
+                        <td style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12 }}>Evident most of the time, with occasional lapses (61-90%).</td>
+                      </tr>
+                      <tr>
+                        <td style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12, textAlign: 'center' }}>3</td>
+                        <td style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12 }}>Sometimes manifested</td>
+                        <td style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12 }}>Evident about half the time (31-60%).</td>
+                      </tr>
+                      <tr>
+                        <td style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12, textAlign: 'center' }}>2</td>
+                        <td style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12 }}>Seldom manifested</td>
+                        <td style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12 }}>Infrequently demonstrated; rarely evident in relevant situations (11-30%).</td>
+                      </tr>
+                      <tr>
+                        <td style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12, textAlign: 'center' }}>1</td>
+                        <td style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12 }}>Never/Rarely manifested</td>
+                        <td style={{ border: '1px solid #ced4da', padding: '6px', fontSize: 12 }}>Seldom demonstrated; almost never evident, with only isolated cases (0-10%).</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </Box>
+              </Stack>
+            </Paper>
 
             {error && (
               <Alert color="red">{error}</Alert>
             )}
 
-            {/* Legend */}
-            {/* <Group spacing="xs" align="center">
-              <Text fw={600}>Scale:</Text>
-              {[5,4,3,2,1].map(n => (
-                <Text key={n} fw={600} c="dimmed">{n}</Text>
-              ))}
-            </Group> */}
+            {activeStep < sections.length ? (
+              <Paper withBorder radius="md" p="md">
+                <Stack spacing="sm">
+                  <Box>
+                    <Text fw={700} size="sm" mb={4}>C. Instruction:</Text>
+                    <Text size="sm">
+                      Read the benchmark statements carefully. Please rate the faculty on each of the following
+                      statements below using the above-listed rating scale.
+                    </Text>
+                  </Box>
 
-            <div style={{ maxHeight: '55vh', overflowY: 'auto', paddingRight: 8 }}>
-              {/* Top cleaner progress bar + numbered circular steps (like screenshot) */}
-              <div style={{ padding: '8px 0 12px 0' }}>
-                {/* thin progress bar with fill */}
-                <div style={{ position: 'relative', height: 6, background: '#e9ecef', borderRadius: 6, overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${((activeStep) / Math.max(1, sections.length - 1)) * 100}%`, background: '#37b24d', transition: 'width 300ms ease' }} />
-                </div>
-
-                {/* centered step info */}
-                <div style={{ textAlign: 'center', marginTop: 6, marginBottom: 8 }}>
-                  <Text fz="xs" c="dimmed">Step {activeStep + 1} of {sections.length}</Text>
-                </div>
-
-                {/* numbered circles spaced evenly */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-                  {sections.map((section, sIdx) => {
-                    const isCompleted = sIdx < activeStep;
-                    const isActive = sIdx === activeStep;
-
-                    const circleCommon = {
-                      width: 36,
-                      height: 36,
-                      borderRadius: '50%',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      boxSizing: 'border-box'
-                    };
-
-                    const circleStyle = isCompleted ? { ...circleCommon, background: '#37b24d', color: '#fff' } : isActive ? { ...circleCommon, background: '#37b24d', color: '#fff' } : { ...circleCommon, background: '#fff', color: '#6c757d', border: '1px solid #ced4da' };
-
-                    return (
-                      <div key={sIdx} style={{ flex: 1, textAlign: 'center' }}>
-                        <div onClick={() => setActiveStep(sIdx)} style={circleStyle}>
-                          {isCompleted ? <IconCheck size={16} /> : <span style={{ fontSize: 14 }}>{sIdx + 1}</span>}
-                        </div>
-                        <div style={{ marginTop: 6 }}>
-                          <Text fz="xs" c="dimmed">{section.title.replace(/^.{0,30}$/, section.title)}</Text>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Render only the active section content below the stepper */}
-              {(() => {
-                const section = sections[activeStep];
-                const sIdx = activeStep;
-                return (
-                  <Box mb="md">
-                    <Text fw={700} mt="sm" mb="xs">{section.title}</Text>
-                    {section.description && (
-                      <Text fz="xs" c="dimmed" mb="xs">{section.description}</Text>
-                    )}
-
-                    {/* Header row for rating columns */}
-                    <Box style={{ display: 'grid', gridTemplateColumns: '1fr repeat(5, 36px)', gap: 6, alignItems: 'center' }}>
-                      <Box />
-                      {[5,4,3,2,1].map(n => (
-                        <Box key={n} style={{ textAlign: 'center' }}>
-                          <Text fw={600}>{n}</Text>
-                        </Box>
-                      ))}
-                    </Box>
-
-                    {section.items.map((item, iIdx) => {
-                      const qId = `s${sIdx}_i${iIdx}`;
-                      const val = answers[qId];
-                      const previousCount = sections.slice(0, sIdx).reduce((a, b) => a + b.items.length, 0);
-                      const displayNumber = previousCount + iIdx + 1;
+                  <div style={{ maxHeight: '45vh', overflowY: 'auto', paddingRight: 8, borderTop: '1px solid #e9ecef', paddingTop: 10 }}>
+                    {(() => {
+                      const section = activeSection;
+                      const sIdx = activeStep;
                       return (
-                        <Box key={qId} style={{ display: 'grid', gridTemplateColumns: '1fr repeat(5, 36px)', gap: 6, alignItems: 'center', marginTop: 8 }}>
-                          <Box>
-                            <Text fz="sm">{`${displayNumber}. ${item}`}</Text>
+                        <Box>
+                          <Text fw={700} mb="xs">{section.title}</Text>
+                          {section.description && (
+                            <Text fz="xs" c="dimmed" mb="xs">{section.description}</Text>
+                          )}
+
+                          <Box
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '1fr repeat(5, 36px)',
+                              gap: 6,
+                              alignItems: 'center',
+                              position: 'sticky',
+                              top: 0,
+                              zIndex: 2,
+                              background: 'var(--mantine-color-body)',
+                              padding: '6px 0',
+                              borderBottom: '1px solid #e9ecef',
+                            }}
+                          >
+                            <Box>
+                              <Text size="xs" fw={600} c="dimmed">Statements</Text>
+                            </Box>
+                            {[5,4,3,2,1].map(n => (
+                              <Box key={n} style={{ textAlign: 'center' }}>
+                                <Text fw={700}>{n}</Text>
+                              </Box>
+                            ))}
                           </Box>
 
-                          {[5,4,3,2,1].map((opt) => (
-                            <Box key={opt} style={{ textAlign: 'center' }}>
-                              <Button
-                                size="xs"
-                                variant={String(val) === String(opt) ? 'filled' : 'outline'}
-                                color={String(val) === String(opt) ? 'blue' : 'gray'}
-                                onClick={() => setAnswer(qId, opt)}
-                                radius="xs"
-                                style={{ minWidth: 30, height: 28, padding: '0 6px' }}
+                          {section.items.map((item, iIdx) => {
+                            const qId = `s${sIdx}_i${iIdx}`;
+                            const val = answers[qId];
+                            const previousCount = sections.slice(0, sIdx).reduce((a, b) => a + b.items.length, 0);
+                            const displayNumber = previousCount + iIdx + 1;
+
+                            const isAnswered = val || val === 0;
+
+                            return (
+                              <Box
+                                key={qId}
+                                style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: '1fr repeat(5, 36px)',
+                                  gap: 6,
+                                  alignItems: 'center',
+                                  marginTop: 8,
+                                  padding: '4px 0',
+                                  borderRadius: 6,
+                                  background: isAnswered ? '#f1f8ff' : 'transparent',
+                                }}
                               >
-                                {String(val) === String(opt) ? <IconCheck size={14} /> : String(opt)}
-                              </Button>
-                            </Box>
-                          ))}
+                                <Box>
+                                  <Text fz="sm">{`${displayNumber}. ${item}`}</Text>
+                                </Box>
+
+                                {[5,4,3,2,1].map((opt) => (
+                                  <Box key={opt} style={{ textAlign: 'center' }}>
+                                    <Button
+                                      size="xs"
+                                      variant={String(val) === String(opt) ? 'filled' : 'outline'}
+                                      color={String(val) === String(opt) ? 'blue' : 'gray'}
+                                      onClick={() => setAnswer(qId, opt)}
+                                      radius="xs"
+                                      style={{ minWidth: 30, height: 28, padding: '0 6px' }}
+                                    >
+                                      {String(val) === String(opt) ? <IconCheck size={14} /> : String(opt)}
+                                    </Button>
+                                  </Box>
+                                ))}
+                              </Box>
+                            );
+                          })}
                         </Box>
                       );
-                    })}
-
-                    <Divider my="sm" />
+                    })()}
+                  </div>
+                </Stack>
+              </Paper>
+            ) : (
+              <Paper withBorder radius="md" p="md">
+                <Stack spacing="sm">
+                  <Box>
+                    <Text fw={700} size="sm">Review & Submit</Text>
+                    <Text size="xs" c="dimmed">This final section shows your score summary and optional comment before submission.</Text>
                   </Box>
-                );
-              })()}
-            </div>
 
-            {/* Totals and rating summary (calculated live) */}
-            <Paper withBorder radius="sm" p="sm">
-              <Group position="apart">
-                <Box>
-                  <Text fz="sm" c="dimmed">Total Score</Text>
-                  <Text fw={700}>{computeTotal()}</Text>
-                </Box>
+                  <Group position="apart" align="flex-start">
+                    <Box>
+                      <Text fz="sm" c="dimmed">Total Score</Text>
+                      <Text fw={700}>{computeTotal()}</Text>
+                    </Box>
 
-                <Box>
-                  <Text fz="sm" c="dimmed">Max Score</Text>
-                  <Text fw={700}>{Object.keys(answers).length * 5 || 0}</Text>
-                </Box>
+                    <Box>
+                      <Text fz="sm" c="dimmed">Max Score</Text>
+                      <Text fw={700}>{Object.keys(answers).length * 5 || 0}</Text>
+                    </Box>
 
-                <Box>
-                  <Text fz="sm" c="dimmed">Rating</Text>
-                  <Text fw={700}>{computePercentage()}% — {ratingLabel(computePercentage())}</Text>
-                </Box>
-              </Group>
-            </Paper>
+                    <Box>
+                      <Text fz="sm" c="dimmed">Rating</Text>
+                      <Text fw={700}>{computePercentage()}% — {ratingLabel(computePercentage())}</Text>
+                    </Box>
+                  </Group>
 
-            <Text>Comments:</Text>
-            <Textarea
-              placeholder="Optional comment for the instructor"
-              minRows={3}
-              value={comment}
-              onChange={(e) => setComment(e.currentTarget.value)}
-            />
+                  <Textarea
+                    label="Comments"
+                    placeholder="Optional comment for the instructor"
+                    minRows={3}
+                    value={comment}
+                    onChange={(e) => setComment(e.currentTarget.value)}
+                  />
+                </Stack>
+              </Paper>
+            )}
+
+            {!canProceedToNext && activeStep < sections.length && (
+              <Alert color="yellow" variant="light">
+                <Text size="sm">Please answer all items in this section before proceeding.</Text>
+              </Alert>
+            )}
+
+              </Stack>
+            </Box>
 
             <Group position="apart">
               <Group>
                 <Button variant="light" color="gray" onClick={() => { if (activeStep > 0) setActiveStep(activeStep - 1); else onClose(); }} disabled={submitting} fz="xs">{activeStep > 0 ? 'Back' : 'Cancel'}</Button>
-                {activeStep < sections.length - 1 ? (
-                  <Button onClick={() => setActiveStep(Math.min(activeStep + 1, sections.length - 1))} disabled={submitting} fz="xs">Next</Button>
+                {activeStep < reviewStepIndex ? (
+                  <Button onClick={() => setActiveStep(Math.min(activeStep + 1, reviewStepIndex))} disabled={submitting || !canProceedToNext} fz="xs">Next</Button>
                 ) : (
                   <Button onClick={handleSubmit} loading={submitting} color="blue" fz="xs">Submit Evaluation</Button>
                 )}
               </Group>
-
-              <Button variant="subtle" color="gray" fz="xs">Step {activeStep + 1} of {sections.reduce((a,b) => a + b.items.length, 0)}</Button>
             </Group>
           </Stack>
         </Paper>

@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Grid, Breadcrumbs, Divider, Title, Text } from '@mantine/core';
 
 import axiosClient from '../../../api/axiosClient'; 
-import { Card, Group, Badge, Avatar, Button, Stack, Loader, Center, SimpleGrid, Paper, Skeleton, Select } from '@mantine/core';
+import { Card, Group, Badge, Avatar, Button, Stack, SimpleGrid, Paper, Skeleton, Select } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import EvaluationModal from '../../../components/Modals/StudentAccount/EvaluationModal';
 
@@ -64,9 +64,14 @@ const EvaluationPage = () => {
                 const data = Array.isArray(payload.enrollments) ? payload.enrollments : payload;
                 // if terms provided, set them and default selectedTerm
                 if (payload.terms) {
-                    setTerms(payload.terms.map(t => ({ id: t.id, name: `S.Y. ${t.school_year_from}–${t.school_year_to} - ${t.semester}` })));
+                    setTerms(
+                        payload.terms.map(t => ({
+                            id: String(t.id),
+                            name: `S.Y. ${t.school_year_from}–${t.school_year_to} - ${t.semester}`,
+                        }))
+                    );
                     if (payload.active_term_id && !selectedTerm) {
-                        setSelectedTerm(payload.active_term_id);
+                        setSelectedTerm(String(payload.active_term_id));
                     }
                 }
 
@@ -205,8 +210,8 @@ const EvaluationPage = () => {
                             <Select
                                 placeholder="Select term/semester"
                                 data={terms.map(t => ({ value: String(t.id), label: t.name }))}
-                                value={selectedTerm ? String(selectedTerm) : undefined}
-                                onChange={(v) => setSelectedTerm(v ? Number(v) : null)}
+                                value={selectedTerm ? String(selectedTerm) : null}
+                                onChange={(v) => setSelectedTerm(v || null)}
                                 sx={{ minWidth: 320 }}
                                 searchable
                                 clearable={false}
@@ -216,8 +221,8 @@ const EvaluationPage = () => {
                                 placeholder="Filter by availability"
                                 data={[
                                     { value: 'all', label: 'All' },
-                                    { value: 'available', label: 'Available' },
-                                    { value: 'unavailable', label: 'Unavailable' },
+                                    { value: 'available', label: 'OPEN FOR RESPONSES' },
+                                    { value: 'unavailable', label: 'CLOSED FOR RESPONSES' },
                                 ]}
                                 value={availabilityFilter}
                                 onChange={(v) => setAvailabilityFilter(v || 'all')}
@@ -260,7 +265,7 @@ const EvaluationPage = () => {
                                         </Group>
 
                                         <Group position="right" mt="md">
-                                            <Button size="xs" onClick={() => openEvaluation(s)} disabled={!isAvailable}>{!isAvailable ? 'Unavailable' : 'Start Evaluation'}</Button>
+                                            <Button size="xs" onClick={() => openEvaluation(s)} disabled={!isAvailable}>{!isAvailable ? 'CLOSED FOR RESPONSES' : 'Start Evaluation'}</Button>
                                         </Group>
                                     </Card>
                                 );
