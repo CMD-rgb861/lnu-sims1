@@ -81,11 +81,9 @@ const StudentEvaluationViewModal = ({ opened, onClose, subject }) => {
   };
 
   const badgeColorForScore = (score) => {
-    const s = Number(score);
-    if (!s) return 'gray';
-    if (s >= 4) return 'teal';
-    if (s === 3) return 'yellow';
-    return 'red';
+    // Use a single consistent color for rating badges to match modal theme.
+    // Keep the function signature in case we want to reintroduce score-based colors later.
+    return 'teal';
   };
 
   const ratingLabel = (pct) => {
@@ -104,39 +102,51 @@ const StudentEvaluationViewModal = ({ opened, onClose, subject }) => {
         <Paper p="md" radius="md" withBorder style={{ position: 'relative' }}>
           <LoadingOverlay visible={loading} overlayProps={{ radius: 'md', blur: 2 }} />
           <Stack spacing="md">
-            <Group position="apart">
-              <div>
-                <Text fw={700}>{subject.code} — {subject.title}</Text>
+            {/* Use a responsive two-column grid for header: title on the left, summary on the right.
+                Allow the title to wrap to up to two lines instead of truncating to keep the layout pleasant when
+                the modal is resized. */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12, alignItems: 'start' }}>
+              <div style={{ minWidth: 0 }}>
+                <Text fw={700} lineClamp={2} style={{ paddingTop: 6, overflow: 'hidden', textOverflow: 'ellipsis' }} title={`${subject.code} — ${subject.title}`}>
+                  {subject.code} — {subject.title}
+                </Text>
                 <Text fz="xs" c="dimmed">Instructor: {subject.instructor?.name || '—'}</Text>
                 <Text fz="xs" c="dimmed">Term: {subject.term?.name || '—'}</Text>
               </div>
-              <div style={{ textAlign: 'right' }}>
+
+              <div style={{ minWidth: 120, maxWidth: 160 }}>
                 {meta ? (
-                  <>
-                    <Text fw={700}>{meta.pct}%</Text>
+                  <Paper withBorder radius="sm" p="xs" style={{ textAlign: 'center' }}>
+                    <Text fw={700} size="lg">{meta.pct}%</Text>
                     <Text fz="xs" c="dimmed">{ratingLabel(meta.pct)}</Text>
-                  </>
-                ) : <Badge>{error ? 'Error' : 'No summary'}</Badge>}
+                  </Paper>
+                ) : (
+                  <Badge>{error ? 'Error' : 'No summary'}</Badge>
+                )}
               </div>
-            </Group>
+            </div>
 
             {error && <Text c="red">{String(error)}</Text>}
 
             {/* Header: add horizontal padding to align with section paper inner content (p="md") */}
-            <div style={{ padding: '0 16px' }}>
+            <div style={{ paddingLeft: 16, paddingRight: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
                 <Text fw={700} size="sm">Benchmark Statements for Faculty Teaching Effectiveness</Text>
-                {/* Ratings header aligned with the right column (match table rating column width) */}
-                <div style={{ width: 120, textAlign: 'center', paddingRight: 8 }}>
-                  <Text fw={700} size="sm" c="dimmed" align="center">Ratings</Text>
-                </div>
+                {/* moved Ratings label into each section header to align with the rating column */}
               </div>
             </div>
             {sections.map((section, sIdx) => (
               <Paper key={sIdx} withBorder radius="md" p="md">
-                <Text fw={700} mb="xs">{section.title}</Text>
+                {/* Put header inside the horizontal scroll container so it scrolls with the table */}
                 <Box style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 580 }}>
+                  <div style={{ minWidth: 640, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8 }}>
+                    <Text fw={700} mb="0">{section.title}</Text>
+                    <div style={{ width: 120, textAlign: 'center', paddingRight: 8 }}>
+                      <Text fw={700} size="sm" c="dimmed" align="center">Ratings</Text>
+                    </div>
+                  </div>
+
+                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
                     <tbody>
                       {section.items.map((it, iIdx) => {
                         const qId = `s${sIdx}_i${iIdx}`;
@@ -145,7 +155,13 @@ const StudentEvaluationViewModal = ({ opened, onClose, subject }) => {
                           <tr key={qId} style={{ borderTop: '1px solid #f1f3f5' }}>
                             <td style={{ padding: '10px 8px', verticalAlign: 'middle' }}><Text fz="sm">{it}</Text></td>
                             <td style={{ padding: '10px 8px', textAlign: 'center', verticalAlign: 'middle', width: 120 }}>
-                              <Badge color={badgeColorForScore(val)} variant="light" style={{ minWidth: 36 }}>{val ?? '—'}</Badge>
+                              <Badge
+                                color={badgeColorForScore(val)}
+                                variant="light"
+                                style={{ minWidth: 44, paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 12, fontSize: 15, fontWeight: 600 }}
+                              >
+                                {val ?? '—'}
+                              </Badge>
                             </td>
                           </tr>
                         );
@@ -164,7 +180,7 @@ const StudentEvaluationViewModal = ({ opened, onClose, subject }) => {
             <Group position="right" spacing="sm" align="center">
               {meta && (
                 <>
-                  <Badge color={badgeColorForScore(Math.round(meta.pct / 20) || 0)} variant="filled">{meta.pct}%</Badge>
+                  <Badge color={badgeColorForScore(Math.round(meta.pct / 20) || 0)} variant="filled" style={{ fontSize: 13, paddingTop: 6, paddingBottom: 6, paddingLeft: 10, paddingRight: 10, fontWeight: 700 }}>{meta.pct}%</Badge>
                   <Text fz="xs" c="dimmed">{ratingLabel(meta.pct)}</Text>
                 </>
               )}
