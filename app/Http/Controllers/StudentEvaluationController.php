@@ -7,6 +7,9 @@ use App\Models\EnrollmentCourse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\SchoolYear;
+use App\Models\StudentEvaluation;
+use App\Models\StudentEvaluationAnswer;
+use Illuminate\Validation\Rule;
 
 class StudentEvaluationController extends Controller
 {
@@ -61,16 +64,7 @@ class StudentEvaluationController extends Controller
             $query->where('school_year_id', $termId);
         }
 
-        if ($availability === 'available') {
-            // available if id_no is present OR instructor text exists
-            $query->where(function ($q) {
-                $q->whereNotNull('id_no')
-                  ->orWhereRaw("COALESCE(instructor, '') <> ''");
-            });
-        } elseif ($availability === 'unavailable') {
-            // unavailable if no id_no AND no instructor text
-            $query->whereNull('id_no')->whereRaw("COALESCE(instructor, '') = ''");
-        }
+        // We'll compute availability (instructor assigned + schedule open) after fetching enrollments
 
         $enrollments = $query->get([
             'id',
@@ -87,11 +81,63 @@ class StudentEvaluationController extends Controller
             'schedule_days',
         ]);
 
-        // Add an is_available flag so frontend doesn't need to infer it
-        $enrollments->transform(function ($e) {
-            $e->is_available = !empty($e->id_no) || (!empty($e->instructor_text) && trim($e->instructor_text) !== '');
+        // Load evaluation schedules for the terms present in these enrollments
+        $termIds = $enrollments->pluck('school_year_id')->unique()->filter()->values()->all();
+        $schedules = collect();
+        if (!empty($termIds)) {
+            $schedules = DB::table('evaluation_schedules')
+                ->whereIn('school_year_id', $termIds)
+                ->get()
+                ->keyBy('school_year_id');
+        }
+
+        // Helper to check if a schedule is open for a given term id
+        $isScheduleOpen = function ($termId) use ($schedules) {
+            $schedule = $schedules->get($termId);
+            if (!$schedule) return false;
+            $now = \Illuminate\Support\Carbon::now();
+            $from = \Illuminate\Support\Carbon::parse($schedule->date_from)->startOfDay();
+            $endDate = $schedule->date_extension ? $schedule->date_extension : $schedule->date_to;
+            $end = \Illuminate\Support\Carbon::parse($endDate)->endOfDay();
+            return $now->between($from, $end);
+        };
+
+        // Compute is_available using both instructor assignment and schedule window
+        $enrollments->transform(function ($e) use ($isScheduleOpen) {
+            $instructorAssigned = !empty($e->id_no) || (!empty($e->instructor_text) && trim($e->instructor_text) !== '');
+            $scheduleOpen = $isScheduleOpen($e->school_year_id);
+            $e->is_available = $instructorAssigned && $scheduleOpen;
             return $e;
         });
+
+        // Apply availability filter if requested (now considers schedule)
+        if ($availability === 'available') {
+            $enrollments = $enrollments->filter(fn($x) => ($x->is_available ?? false))->values();
+        } elseif ($availability === 'unavailable') {
+            $enrollments = $enrollments->filter(fn($x) => !($x->is_available ?? false))->values();
+        }
+
+        // Mark which enrollments already have submissions by this student for the term
+        $enrollmentIds = $enrollments->pluck('id')->filter()->values()->all();
+        if (!empty($enrollmentIds)) {
+            $existing = StudentEvaluation::where('student_id_number', $studentIdNumber)
+                        ->whereIn('subject_id', $enrollmentIds)
+                        ->where('term_id', $termId)
+                        ->get()
+                        ->keyBy('subject_id');
+
+            $enrollments->transform(function ($e) use ($existing) {
+                $sub = $existing->get($e->id);
+                $e->is_submitted = $sub ? true : false;
+                if ($sub) {
+                    $e->submission_id = $sub->id;
+                    $e->submitted_at = $sub->submitted_at;
+                    // once submitted, mark not available for further evaluation
+                    $e->is_available = false;
+                }
+                return $e;
+            });
+        }
 
         // Flatten related program/department/college and course data into each enrollment
         $enrollments->transform(function ($e) {
@@ -118,5 +164,105 @@ class StudentEvaluationController extends Controller
             'terms' => $terms,
             'active_term_id' => $activeTermId,
         ]);
+    }
+
+    /**
+     * Store a student evaluation submission.
+     * Expected payload: subject_id, instructor_id (nullable), term_id, answers (object), comment (nullable)
+     */
+    public function store(Request $request)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $data = $request->validate([
+            'subject_id' => ['required', 'integer'],
+            'instructor_id' => ['nullable', 'integer'],
+            'term_id' => ['required', 'integer'],
+            'answers' => ['required', 'array'],
+            'comment' => ['nullable', 'string'],
+        ]);
+
+        $answers = $data['answers'];
+
+        // validate each score is integer 1..5
+        foreach ($answers as $key => $value) {
+            if (!is_numeric($value) || (int)$value < 1 || (int)$value > 5) {
+                return response()->json(['message' => "Invalid score for {$key}. Must be integer 1..5."], 422);
+            }
+        }
+
+        $termId = $data['term_id'];
+
+        // Check evaluation schedule open for term
+        $schedule = DB::table('evaluation_schedules')->where('school_year_id', $termId)->first();
+        if (!$schedule) {
+            return response()->json(['message' => 'Evaluation schedule not found for term'], 422);
+        }
+
+        $now = now()->startOfDay();
+        $dateFrom = \Illuminate\Support\Carbon::parse($schedule->date_from)->startOfDay();
+        $effectiveEnd = $schedule->date_extension ? \Illuminate\Support\Carbon::parse($schedule->date_extension)->endOfDay() : \Illuminate\Support\Carbon::parse($schedule->date_to)->endOfDay();
+
+        if (!($now->between($dateFrom, $effectiveEnd))) {
+            return response()->json(['message' => 'Evaluation is not open for the selected term'], 422);
+        }
+
+        $studentIdNumber = $user->id_number;
+
+        // enforce unique submission
+        $exists = StudentEvaluation::where('student_id_number', $studentIdNumber)
+                    ->where('subject_id', $data['subject_id'])
+                    ->where('term_id', $termId)
+                    ->exists();
+
+        if ($exists) {
+            return response()->json(['message' => 'You have already submitted an evaluation for this subject and term.'], 409);
+        }
+
+        // compute totals
+        $total = 0;
+        $count = 0;
+        foreach ($answers as $v) {
+            $s = (int)$v;
+            $total += $s;
+            $count++;
+        }
+        $max = $count * 5;
+        $rating = $max > 0 ? round(($total / $max) * 100, 2) : 0.00;
+
+        // save in transaction
+        try {
+            $submission = DB::transaction(function () use ($studentIdNumber, $data, $answers, $total, $max, $rating) {
+                $s = StudentEvaluation::create([
+                    'student_id_number' => $studentIdNumber,
+                    'subject_id' => $data['subject_id'],
+                    'instructor_id' => $data['instructor_id'] ?? null,
+                    'term_id' => $data['term_id'],
+                    'total_score' => $total,
+                    'max_score' => $max,
+                    'rating_percentage' => $rating,
+                    'comment' => $data['comment'] ?? null,
+                    'submitted_at' => now(),
+                    'status' => 'submitted',
+                ]);
+
+                foreach ($answers as $k => $v) {
+                    $s->answers()->create([
+                        'question_key' => $k,
+                        'score' => (int)$v,
+                    ]);
+                }
+
+                return $s;
+            });
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to save evaluation', 'error' => $e->getMessage()], 500);
+        }
+
+        return response()->json(['message' => 'Evaluation submitted', 'submission_id' => $submission->id], 201);
     }
 }

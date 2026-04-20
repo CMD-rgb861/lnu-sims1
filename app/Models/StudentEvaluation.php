@@ -3,57 +3,91 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class StudentEvaluation extends Model
 {
-    // This model maps to enrollment_courses to provide a focused resource for the
-    // student evaluation page without changing the existing EnrollmentCourse model.
-    protected $table = 'enrollment_courses';
+	protected $table = 'student_evaluation_submissions';
 
-    protected $fillable = [
-        'school_year_id',
-        'id_number',
-        'course_id',
-        'program_id',
-        'curriculum_id',
-        'year_level',
-        'course_code',
-        'course_description',
-        'course_units',
-        'status',
-        'grade',
-        'final_grade',
-        'inc',
-        'section_code',
-        'instructor',
-        'id_no',
-        'schedule_time',
-        'schedule_days',
-        'schedule_days_no',
-        'room',
-        'date_dropped_removed',
-    ];
+	protected $fillable = [
+		'student_id_number',
+		'subject_id',
+		'instructor_id',
+		'term_id',
+		'total_score',
+		'max_score',
+		'rating_percentage',
+		'comment',
+		'submitted_at',
+		'status',
+	];
 
-    public function schoolYear()
-    {
-        return $this->belongsTo(SchoolYear::class, 'school_year_id');
-    }
+	protected $casts = [
+		'submitted_at' => 'datetime',
+		'rating_percentage' => 'decimal:2',
+	];
 
-    public function course()
-    {
-        return $this->belongsTo(Course::class, 'course_id');
-    }
+	public function answers()
+	{
+		return $this->hasMany(StudentEvaluationAnswer::class, 'submission_id');
+	}
 
-    public function program()
-    {
-        return $this->belongsTo(Program::class, 'program_id');
-    }
+	public function student()
+	{
+		return $this->belongsTo(StudentAccount::class, 'student_id_number', 'id_number');
+	}
 
-    /**
-     * Instructor relation using id_no (populated on enrollment).
-     */
-    public function instructor()
-    {
-        return $this->belongsTo(UserAccount::class, 'id_no');
-    }
+	public function instructor()
+	{
+		return $this->belongsTo(UserAccount::class, 'instructor_id');
+	}
+
+	/**
+	 * Convenience factory to create a submission with answers in a transaction.
+	 * Expects $payload = [subject_id, instructor_id, term_id, answers (key=>score), comment]
+	 */
+	public static function createWithAnswers(array $payload)
+	{
+		$user = Auth::user();
+		$studentId = $user?->id_number;
+
+		$answers = $payload['answers'] ?? [];
+
+		$totalScore = 0;
+		$count = 0;
+		foreach ($answers as $k => $v) {
+			$score = (int) $v;
+			if ($score < 1) $score = 1;
+			if ($score > 5) $score = 5;
+			$totalScore += $score;
+			$count++;
+		}
+
+		$maxScore = $count * 5;
+		$rating = $maxScore > 0 ? ($totalScore / $maxScore) * 100 : 0;
+
+		$submission = self::create([
+			'student_id_number' => $studentId,
+			'subject_id' => $payload['subject_id'],
+			'instructor_id' => $payload['instructor_id'] ?? null,
+			'term_id' => $payload['term_id'],
+			'total_score' => $totalScore,
+			'max_score' => $maxScore,
+			'rating_percentage' => round($rating, 2),
+			'comment' => $payload['comment'] ?? null,
+			'submitted_at' => now(),
+			'status' => 'submitted',
+		]);
+
+		// attach answers
+		foreach ($answers as $key => $value) {
+			$submission->answers()->create([
+				'question_key' => $key,
+				'score' => (int) $value,
+			]);
+		}
+
+		return $submission;
+	}
 }
+

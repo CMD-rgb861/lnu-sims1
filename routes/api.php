@@ -176,8 +176,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     });
     
-    Route::prefix('/g/')->name('evaluation.')->group(function() {
-        // Student evaluation endpoints
+    
+
+    // STUDENTS EVALUATION ROUTES //
+    Route::prefix('/eval/')->name('eval.')->group(function() {
         Route::get('/fetch/enrollments', [StudentEvaluationController::class, 'index'])->name('fetchEnrollments');
+        Route::post('/evaluations', [StudentEvaluationController::class, 'store'])->name('submitEvaluation');
     });
+
+    // Legacy/compat route used by frontend modal: keep POST /api/student/evaluations
+    Route::post('/student/evaluations', [StudentEvaluationController::class, 'store'])->name('submitEvaluation.legacy');
 });

@@ -19,7 +19,6 @@ const EvaluationPage = () => {
 
     const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
     const [selectedSubject, setSelectedSubject] = useState(null);
-    const [submittedIds, setSubmittedIds] = useState([]);
     const [subjects, setSubjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -27,32 +26,14 @@ const EvaluationPage = () => {
     const [selectedTerm, setSelectedTerm] = useState(null);
     const [availabilityFilter, setAvailabilityFilter] = useState('all');
 
-    // Sample data to use as a graceful fallback while backend isn't wired
-    const sampleSubjects = [
-        {
-            id: 1,
-            code: 'CS101',
-            title: 'Introduction to Computer Science',
-            instructor: { id: 101, name: 'Prof. Alice Mendoza' },
-            term: { id: '2025-1', name: '2025-2026 — 1st Semester' },
-            is_available: true,
-        },
-        {
-            id: 2,
-            code: 'MATH201',
-            title: 'Calculus II',
-            instructor: { id: 102, name: 'Dr. Juan Dela Cruz' },
-            term: { id: '2025-1', name: '2025-2026 — 1st Semester' },
-            is_available: false,
-        },
-    ];
+    // Do not use sample fallback data in production - show empty list if backend has none
 
     useEffect(() => {
         let mounted = true;
         setLoading(true);
 
         // Fetch enrollments for the logged-in student. Server will apply term and availability filters.
-        axiosClient.get('/api/g/fetch/enrollments', {
+    axiosClient.get('/api/eval/fetch/enrollments', {
             params: {
                 term: selectedTerm || 'current',
                 availability: availabilityFilter || 'all'
@@ -136,19 +117,24 @@ const EvaluationPage = () => {
                             instructor: { id: e.id_no, name: instructorName, programs, college: collegeName },
                             term: { id: e.school_year_id, name: termName },
                             is_available: typeof e.is_available !== 'undefined' ? e.is_available : true,
+                            is_submitted: typeof e.is_submitted !== 'undefined' ? e.is_submitted : false,
+                            submission_id: e.submission_id ?? null,
+                            submitted_at: e.submitted_at ?? null,
                         };
                     });
 
                     setSubjects(mapped);
                 } else {
-                    setSubjects(sampleSubjects);
+                    // No enrollments returned for the selected term/filters
+                    setSubjects([]);
                 }
             })
             .catch(err => {
-                console.warn('Failed to fetch evaluation subjects, using sample data', err);
+                console.warn('Failed to fetch evaluation subjects', err);
                 if (mounted) {
                     setError(err);
-                    setSubjects(sampleSubjects);
+                    // clear subjects so UI shows no real data instead of sample placeholders
+                    setSubjects([]);
                 }
             })
             .finally(() => mounted && setLoading(false));
@@ -162,10 +148,8 @@ const EvaluationPage = () => {
     }
 
     const handleSubmitted = (subjectId) => {
-        setSubmittedIds(prev => {
-            if (prev.includes(subjectId)) return prev;
-            return [...prev, subjectId];
-        });
+        // mark subject as submitted in the subjects list so UI updates immediately and persist on refresh
+        setSubjects(prev => prev.map(s => s.id === subjectId ? { ...s, is_submitted: true, is_available: false } : s));
     };
 
     return (
@@ -231,7 +215,7 @@ const EvaluationPage = () => {
 
                             <Select
                                 placeholder="Select a subject to evaluate"
-                                data={subjects.map(s => ({ value: String(s.id), label: `${s.code} — ${s.title}`, disabled: !(s.is_available === undefined ? true : s.is_available) }))}
+                                data={subjects.map(s => ({ value: String(s.id), label: `${s.code} — ${s.title}`, disabled: (!(s.is_available === undefined ? true : s.is_available) || s.is_submitted) }))}
                                 searchable
                                 clearable
                                 nothingfound="No subjects"
@@ -240,12 +224,21 @@ const EvaluationPage = () => {
                                     const subj = subjects.find(x => String(x.id) === String(val));
                                     if (!subj) return;
                                     const isAvailable = subj.is_available === undefined ? true : subj.is_available;
-                                    if (!isAvailable) return; // do nothing on disabled
+                                    if (!isAvailable || subj.is_submitted) return; // do nothing on disabled or already submitted
                                     openEvaluation(subj);
                                 }}
                                 sx={{ flex: 1 }}
                             />
                         </Group>
+
+                        {/* Fallback message when there are no subjects to display */}
+                        {(!loading && Array.isArray(subjects) && subjects.length === 0) && (
+                            <Paper withBorder radius="md" p="md" mb="md">
+                                <Text fw={600}>No subjects found</Text>
+                                <Text fz="sm" c="dimmed">There are no available subjects for the selected term or filters.</Text>
+                                {error && <Text fz="sm" c="red" mt="sm">Error loading data: {String(error?.message || error)}</Text>}
+                            </Paper>
+                        )}
 
                         <SimpleGrid cols={2} breakpoints={[{ maxWidth: 'sm', cols: 1 }]}> 
                             {subjects.map((s) => {
@@ -261,11 +254,11 @@ const EvaluationPage = () => {
                                                     <Text fz="xs" c="dimmed">Term: {s.term.name}</Text>
                                                 </div>
                                             </Group>
-                                            <Badge color={submittedIds.includes(s.id) ? 'teal' : (isAvailable ? 'gray' : 'red')} variant="light">{submittedIds.includes(s.id) ? 'Submitted' : (isAvailable ? 'Evaluate' : 'Not available')}</Badge>
+                                            <Badge color={s.is_submitted ? 'teal' : (isAvailable ? 'green' : 'red')} variant="light">{s.is_submitted ? 'Submitted' : (isAvailable ? 'OPEN FOR RESPONSES' : 'CLOSED FOR RESPONSES')}</Badge>
                                         </Group>
 
                                         <Group position="right" mt="md">
-                                            <Button size="xs" onClick={() => openEvaluation(s)} disabled={!isAvailable}>{!isAvailable ? 'CLOSED FOR RESPONSES' : 'Start Evaluation'}</Button>
+                                            <Button size="xs" onClick={() => openEvaluation(s)} disabled={!isAvailable || s.is_submitted}>{s.is_submitted ? 'SUBMITTED' : (!isAvailable ? 'CLOSED FOR RESPONSES' : 'Start Evaluation')}</Button>
                                         </Group>
                                     </Card>
                                 );
