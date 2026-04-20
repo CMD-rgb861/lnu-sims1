@@ -162,6 +162,10 @@ const EvaluationPage = () => {
         // Do not automatically open the view modal after submission; user can click "View Evaluation" when ready.
     };
 
+    // compute selected term open/closed once so badges follow the term selector status
+    const selectedTermObj = selectedTerm ? terms.find(t => String(t.id) === String(selectedTerm)) : null;
+    const selectedTermIsOpen = selectedTermObj ? !!selectedTermObj.is_open : true;
+
     return (
         <Grid>
             <Grid.Col span={12}>
@@ -270,21 +274,61 @@ const EvaluationPage = () => {
                             {subjects.map((s) => {
                                 const isAvailable = s.is_available === undefined ? true : s.is_available;
                                 return (
-                                    <Card key={s.id} shadow="sm" padding="md" radius="md" withBorder style={{ opacity: isAvailable ? 1 : 0.6 }}>
-                                        <Group position="apart">
-                                            <Group>
-                                                <Avatar color="blue" radius="xl">{String(s.instructor.name).split(' ').map(n=>n[0]).join('').slice(0,2)}</Avatar>
-                                                <div>
-                                                    <Text fw={700}>{s.code} — {s.title}</Text>
-                                                    <Text fz="xs" c="dimmed">Instructor: {s.instructor.name}</Text>
-                                                    <Text fz="xs" c="dimmed">Term: {s.term.name}</Text>
-                                                </div>
+                                    <Card key={s.id} shadow="sm" padding="md" radius="md" withBorder>
+                                        {/* Dim only the content area when not available, keep action button full-bright */}
+                                        <div style={{ opacity: isAvailable ? 1 : 0.6 }}>
+                                            <Group position="apart">
+                                                <Group>
+                                                    <Avatar color="blue" radius="xl">{String(s.instructor.name).split(' ').map(n=>n[0]).join('').slice(0,2)}</Avatar>
+                                                    <div>
+                                                        <Text fw={700}>{s.code} — {s.title}</Text>
+                                                        <Text fz="xs" c="dimmed">Instructor: {s.instructor.name}</Text>
+                                                        <Text fz="xs" c="dimmed">Term: {s.term.name}</Text>
+                                                    </div>
+                                                </Group>
+                                                {/* Render multiple badges: Evaluated (teal) can appear together with Closed (red) */}
+                                                {(() => {
+                                                    const badges = [];
+
+                                                    // Evaluated badge when student already submitted
+                                                    if (s.is_submitted) {
+                                                        badges.push(
+                                                            <Badge key="evaluated" color="teal" variant="light" style={{ marginRight: 8 }}>Evaluated</Badge>
+                                                        );
+                                                    }
+
+                                                    // For Evaluation (active) when the selected term is open, subject available, and not yet submitted
+                                                    if (selectedTermIsOpen && isAvailable && !s.is_submitted) {
+                                                        badges.push(
+                                                            <Badge key="for" color="red" variant="light">For Evaluation</Badge>
+                                                        );
+                                                    }
+
+                                                    // Closed for Evaluation when the selected term is closed (can coexist with Evaluated)
+                                                    if (!selectedTermIsOpen) {
+                                                        badges.push(
+                                                            <Badge key="closed" color="red" variant="light" style={{ textTransform: 'uppercase', fontWeight: 600, fontSize: 12 }}>
+                                                                Closed for Evaluation
+                                                            </Badge>
+                                                        );
+                                                    }
+
+                                                    return <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{badges}</div>;
+                                                })()}
                                             </Group>
-                                            <Badge color={s.is_submitted ? 'teal' : (isAvailable ? 'green' : 'red')} variant="light">{s.is_submitted ? 'Evaluated' : (isAvailable ? 'For Evaluation' : 'Closed for Evaluation')}</Badge>
-                                        </Group>
+                                        </div>
 
                                         <Group position="right" mt="md">
-                                            <Button size="xs" onClick={() => s.is_submitted ? openViewEvaluation(s) : openEvaluation(s)} disabled={!isAvailable && !s.is_submitted}>{s.is_submitted ? 'View Evaluation' : (!isAvailable ? 'Closed for Evaluation' : 'Start Evaluation')}</Button>
+                                            {/* Ensure clickable buttons keep the same visible color even when the card content is faded for completed items */}
+                                            <Button
+                                                size="xs"
+                                                color={(s.is_submitted || isAvailable) ? 'blue' : undefined}
+                                                onClick={() => s.is_submitted ? openViewEvaluation(s) : openEvaluation(s)}
+                                                disabled={!isAvailable && !s.is_submitted}
+                                                style={{ opacity: 1 }}
+                                            >
+                                                {s.is_submitted ? 'View Evaluation' : (!isAvailable ? 'Closed for Evaluation' : 'Start Evaluation')}
+                                            </Button>
                                         </Group>
                                     </Card>
                                 );
