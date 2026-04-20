@@ -110,13 +110,6 @@ class StudentEvaluationController extends Controller
             return $e;
         });
 
-        // Apply availability filter if requested (now considers schedule)
-        if ($availability === 'available') {
-            $enrollments = $enrollments->filter(fn($x) => ($x->is_available ?? false))->values();
-        } elseif ($availability === 'unavailable') {
-            $enrollments = $enrollments->filter(fn($x) => !($x->is_available ?? false))->values();
-        }
-
         // Mark which enrollments already have submissions by this student for the term
         $enrollmentIds = $enrollments->pluck('id')->filter()->values()->all();
         if (!empty($enrollmentIds)) {
@@ -139,6 +132,22 @@ class StudentEvaluationController extends Controller
             });
         }
 
+        // Apply availability filter if requested (now considers schedule and submission state)
+        // Supported values:
+        // - 'available' (backwards compat) => is_available == true
+        // - 'unavailable' (backwards compat) => is_available == false
+        // - 'for_evaluation' => is_available == true AND is_submitted == false
+        // - 'evaluated' => is_submitted == true
+        if ($availability === 'available') {
+            $enrollments = $enrollments->filter(fn($x) => ($x->is_available ?? false))->values();
+        } elseif ($availability === 'unavailable') {
+            $enrollments = $enrollments->filter(fn($x) => !($x->is_available ?? false))->values();
+        } elseif ($availability === 'for_evaluation') {
+            $enrollments = $enrollments->filter(fn($x) => (($x->is_available ?? false) && !($x->is_submitted ?? false)))->values();
+        } elseif ($availability === 'evaluated') {
+            $enrollments = $enrollments->filter(fn($x) => ($x->is_submitted ?? false))->values();
+        }
+
         // Flatten related program/department/college and course data into each enrollment
         $enrollments->transform(function ($e) {
             // program
@@ -156,8 +165,39 @@ class StudentEvaluationController extends Controller
             return $e;
         });
 
-        // Fetch terms for the frontend term selector
+        // Fetch terms for the frontend term selector and include an authoritative 'is_open' flag per term
         $terms = SchoolYear::orderByDesc('school_year_from')->orderByDesc('semester')->get(['id', 'school_year_from', 'school_year_to', 'semester']);
+
+        // Load schedules for all terms so we can compute an authoritative is_open flag
+        $termIdsAll = $terms->pluck('id')->filter()->values()->all();
+        $schedulesAll = collect();
+        if (!empty($termIdsAll)) {
+            $schedulesAll = DB::table('evaluation_schedules')
+                ->whereIn('school_year_id', $termIdsAll)
+                ->get()
+                ->keyBy('school_year_id');
+        }
+
+        $isScheduleOpenFor = function ($termId) use ($schedulesAll) {
+            $schedule = $schedulesAll->get($termId);
+            if (!$schedule) return false;
+            $now = \Illuminate\Support\Carbon::now();
+            $from = \Illuminate\Support\Carbon::parse($schedule->date_from)->startOfDay();
+            $endDate = $schedule->date_extension ? $schedule->date_extension : $schedule->date_to;
+            $end = \Illuminate\Support\Carbon::parse($endDate)->endOfDay();
+            return $now->between($from, $end);
+        };
+
+        // attach is_open to terms
+        $terms = $terms->map(function ($t) use ($isScheduleOpenFor) {
+            return [
+                'id' => $t->id,
+                'school_year_from' => $t->school_year_from,
+                'school_year_to' => $t->school_year_to,
+                'semester' => $t->semester,
+                'is_open' => $isScheduleOpenFor($t->id),
+            ];
+        });
 
         return response()->json([
             'enrollments' => $enrollments,
@@ -247,7 +287,8 @@ class StudentEvaluationController extends Controller
                     'rating_percentage' => $rating,
                     'comment' => $data['comment'] ?? null,
                     'submitted_at' => now(),
-                    'status' => 'submitted',
+                    // mark completed evaluations as 'evaluated' status
+                    'status' => 'evaluated',
                 ]);
 
                 foreach ($answers as $k => $v) {
@@ -264,5 +305,48 @@ class StudentEvaluationController extends Controller
         }
 
         return response()->json(['message' => 'Evaluation submitted', 'submission_id' => $submission->id], 201);
+    }
+
+    /**
+     * Show a single submission and its answers for the authenticated student.
+     */
+    public function show(Request $request, $id)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $submission = StudentEvaluation::with('answers')->find($id);
+        if (!$submission) {
+            return response()->json(['message' => 'Submission not found'], 404);
+        }
+
+        // ensure the authenticated student owns this submission
+        if ($submission->student_id_number !== $user->id_number) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        // transform answers into a key=>score map for easier frontend consumption
+        $answers = [];
+        foreach ($submission->answers as $a) {
+            $answers[$a->question_key] = $a->score;
+        }
+
+        return response()->json([
+            'submission' => [
+                'id' => $submission->id,
+                'student_id_number' => $submission->student_id_number,
+                'subject_id' => $submission->subject_id,
+                'instructor_id' => $submission->instructor_id,
+                'term_id' => $submission->term_id,
+                'total_score' => $submission->total_score,
+                'max_score' => $submission->max_score,
+                'rating_percentage' => $submission->rating_percentage,
+                'comment' => $submission->comment,
+                'submitted_at' => $submission->submitted_at,
+                'answers' => $answers,
+            ]
+        ]);
     }
 }

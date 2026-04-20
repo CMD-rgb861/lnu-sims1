@@ -8,6 +8,7 @@ import axiosClient from '../../../api/axiosClient';
 import { Card, Group, Badge, Avatar, Button, Stack, SimpleGrid, Paper, Skeleton, Select } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import EvaluationModal from '../../../components/Modals/StudentAccount/EvaluationModal';
+import StudentEvaluationViewModal from '../../../components/Modals/StudentAccount/StudentEvaluationViewModal';
 
 const EvaluationPage = () => {
     // Breadcrumb items (simple, to avoid undefined variable and runtime crash)
@@ -18,7 +19,9 @@ const EvaluationPage = () => {
     ];
 
     const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+    const [viewModalOpened, { open: openViewModal, close: closeViewModal }] = useDisclosure(false);
     const [selectedSubject, setSelectedSubject] = useState(null);
+    const [selectedViewSubject, setSelectedViewSubject] = useState(null);
     const [subjects, setSubjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -49,6 +52,7 @@ const EvaluationPage = () => {
                         payload.terms.map(t => ({
                             id: String(t.id),
                             name: `S.Y. ${t.school_year_from}–${t.school_year_to} - ${t.semester}`,
+                            is_open: typeof t.is_open !== 'undefined' ? !!t.is_open : false,
                         }))
                     );
                     if (payload.active_term_id && !selectedTerm) {
@@ -147,9 +151,15 @@ const EvaluationPage = () => {
         openModal();
     }
 
-    const handleSubmitted = (subjectId) => {
+    function openViewEvaluation(subject) {
+        setSelectedViewSubject(subject);
+        openViewModal();
+    }
+
+    const handleSubmitted = (subjectId, submissionId = null) => {
         // mark subject as submitted in the subjects list so UI updates immediately and persist on refresh
-        setSubjects(prev => prev.map(s => s.id === subjectId ? { ...s, is_submitted: true, is_available: false } : s));
+        setSubjects(prev => prev.map(s => s.id === subjectId ? { ...s, is_submitted: true, is_available: false, submission_id: submissionId ?? s.submission_id, submitted_at: submissionId ? new Date().toISOString() : s.submitted_at } : s));
+        // Do not automatically open the view modal after submission; user can click "View Evaluation" when ready.
     };
 
     return (
@@ -202,11 +212,11 @@ const EvaluationPage = () => {
                             />
 
                             <Select
-                                placeholder="Filter by availability"
+                                placeholder="Filter by status"
                                 data={[
                                     { value: 'all', label: 'All' },
-                                    { value: 'available', label: 'OPEN FOR RESPONSES' },
-                                    { value: 'unavailable', label: 'CLOSED FOR RESPONSES' },
+                                    { value: 'for_evaluation', label: 'For Evaluation' },
+                                    { value: 'evaluated', label: 'Evaluated' },
                                 ]}
                                 value={availabilityFilter}
                                 onChange={(v) => setAvailabilityFilter(v || 'all')}
@@ -229,6 +239,22 @@ const EvaluationPage = () => {
                                 }}
                                 sx={{ flex: 1 }}
                             />
+
+                            {/* Right-aligned evaluation status for the selected term */}
+                            <div style={{ marginLeft: 'auto' }}>
+                                { /* Compute status based on whether any subject for the selected term is available and not yet submitted */ }
+                                {(() => {
+                                    const termId = selectedTerm ? String(selectedTerm) : null;
+                                    const termObj = termId ? terms.find(t => String(t.id) === String(termId)) : null;
+                                    const hasTerm = !!termObj;
+                                    const isOpen = hasTerm ? !!termObj.is_open : false;
+                                    const label = !hasTerm ? 'No term selected' : (isOpen ? 'Open for Evaluation' : 'Closed for Evaluation');
+                                    const color = !hasTerm ? 'gray' : (isOpen ? 'green' : 'red');
+                                    return (
+                                        <Badge color={color} variant="light">{label}</Badge>
+                                    );
+                                })()}
+                            </div>
                         </Group>
 
                         {/* Fallback message when there are no subjects to display */}
@@ -254,11 +280,11 @@ const EvaluationPage = () => {
                                                     <Text fz="xs" c="dimmed">Term: {s.term.name}</Text>
                                                 </div>
                                             </Group>
-                                            <Badge color={s.is_submitted ? 'teal' : (isAvailable ? 'green' : 'red')} variant="light">{s.is_submitted ? 'Submitted' : (isAvailable ? 'OPEN FOR RESPONSES' : 'CLOSED FOR RESPONSES')}</Badge>
+                                            <Badge color={s.is_submitted ? 'teal' : (isAvailable ? 'green' : 'red')} variant="light">{s.is_submitted ? 'Evaluated' : (isAvailable ? 'For Evaluation' : 'Closed for Evaluation')}</Badge>
                                         </Group>
 
                                         <Group position="right" mt="md">
-                                            <Button size="xs" onClick={() => openEvaluation(s)} disabled={!isAvailable || s.is_submitted}>{s.is_submitted ? 'SUBMITTED' : (!isAvailable ? 'CLOSED FOR RESPONSES' : 'Start Evaluation')}</Button>
+                                            <Button size="xs" onClick={() => s.is_submitted ? openViewEvaluation(s) : openEvaluation(s)} disabled={!isAvailable && !s.is_submitted}>{s.is_submitted ? 'View Evaluation' : (!isAvailable ? 'Closed for Evaluation' : 'Start Evaluation')}</Button>
                                         </Group>
                                     </Card>
                                 );
@@ -274,6 +300,12 @@ const EvaluationPage = () => {
                     instructor={selectedSubject?.instructor}
                     term={selectedSubject?.term}
                     onSubmitted={handleSubmitted}
+                />
+                {/* View-only modal for submitted evaluations */}
+                <StudentEvaluationViewModal
+                    opened={viewModalOpened}
+                    onClose={() => { closeViewModal(); setSelectedViewSubject(null); }}
+                    subject={selectedViewSubject}
                 />
             </Grid.Col>
         </Grid>

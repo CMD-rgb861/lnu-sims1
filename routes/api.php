@@ -182,6 +182,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('/eval/')->name('eval.')->group(function() {
         Route::get('/fetch/enrollments', [StudentEvaluationController::class, 'index'])->name('fetchEnrollments');
         Route::post('/evaluations', [StudentEvaluationController::class, 'store'])->name('submitEvaluation');
+        Route::get('/evaluations/{id}', [StudentEvaluationController::class, 'show'])->name('showEvaluation');
     });
 
     // Legacy/compat route used by frontend modal: keep POST /api/student/evaluations

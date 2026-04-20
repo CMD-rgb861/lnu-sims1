@@ -49,6 +49,7 @@ const EvaluationModal = ({ opened, onClose, subject, instructor, term, onSubmitt
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [activeStep, setActiveStep] = useState(0);
+  
 
   useEffect(() => {
     if (opened) {
@@ -98,8 +99,9 @@ const EvaluationModal = ({ opened, onClose, subject, instructor, term, onSubmitt
 
     try {
       // Frontend-only: attempt to post but don't fail hard if backend isn't ready
-      await axiosClient.post('/api/student/evaluations', payload);
-      if (onSubmitted) onSubmitted(subject?.id);
+      const res = await axiosClient.post('/api/student/evaluations', payload);
+      const submissionId = res?.data?.submission_id ?? null;
+      if (onSubmitted) onSubmitted(subject?.id, submissionId);
       onClose();
     } catch (err) {
       // show error but keep modal open so user can retry
@@ -161,9 +163,9 @@ const EvaluationModal = ({ opened, onClose, subject, instructor, term, onSubmitt
       onClose={onClose}
       title={subject ? (
         <Stack spacing={3} style={{ minWidth: 0 }}>
-          <Group position="apart" align="center" spacing="xs" noWrap>
+          <Group position="apart" align="center" spacing="xs" wrap="nowrap">
             <Text fw={700} size="sm">Evaluation progress</Text>
-            <Group spacing={8} noWrap>
+            <Group spacing={8} wrap="nowrap">
               <Text size="xs" c="dimmed">Step {activeStep + 1} of {totalSteps}</Text>
               {activeStep < sections.length && (
                 <Text size="xs" fw={600} c={canProceedToNext ? 'teal' : 'dimmed'}>
@@ -455,16 +457,16 @@ const EvaluationModal = ({ opened, onClose, subject, instructor, term, onSubmitt
               </Stack>
             </Box>
 
-            <Group position="apart">
-              <Group>
-                <Button variant="light" color="gray" onClick={() => { if (activeStep > 0) setActiveStep(activeStep - 1); else onClose(); }} disabled={submitting} fz="xs">{activeStep > 0 ? 'Back' : 'Cancel'}</Button>
-                {activeStep < reviewStepIndex ? (
-                  <Button onClick={() => setActiveStep(Math.min(activeStep + 1, reviewStepIndex))} disabled={submitting || !canProceedToNext} fz="xs">Next</Button>
-                ) : (
-                  <Button onClick={handleSubmit} loading={submitting} color="blue" fz="xs">Submit Evaluation</Button>
-                )}
-              </Group>
-            </Group>
+                <Group position="apart">
+                  <Group>
+                    <Button variant="light" color="gray" onClick={() => { if (activeStep > 0) setActiveStep(activeStep - 1); else onClose(); }} disabled={submitting} fz="xs">{activeStep > 0 ? 'Back' : 'Cancel'}</Button>
+                    {activeStep < reviewStepIndex ? (
+                      <Button onClick={() => setActiveStep(Math.min(activeStep + 1, reviewStepIndex))} disabled={submitting || !canProceedToNext} fz="xs">Next</Button>
+                    ) : (
+                      <Button onClick={handleSubmit} loading={submitting} color="blue" fz="xs">Submit Evaluation</Button>
+                    )}
+                  </Group>
+                </Group>
           </Stack>
         </Paper>
       )}
