@@ -63,6 +63,9 @@ const StudentSidebarComponent = () => {
   const dispatch = useDispatch();
   const { unreadCount } = useSelector((state) => state.notifications);
 
+  // Open evaluations count (for sidebar badge dot)
+  const [openEvalCount, setOpenEvalCount] = useState(0);
+
   // 1. Notification State
   const [notifOpened, setNotifOpened] = useState(false);
 
@@ -77,6 +80,29 @@ const StudentSidebarComponent = () => {
         };
         fetchCount();
     }, []);
+
+  // Fetch open evaluations count for sidebar dot
+  const fetchOpenEvaluations = async () => {
+    try {
+      const res = await axiosClient.get('/api/eval/fetch/enrollments', { params: { term: 'current' } });
+      const payload = res?.data || {};
+      const enrollments = Array.isArray(payload.enrollments) ? payload.enrollments : (payload || []);
+      const count = enrollments.filter(e => (e.is_available ?? false) && !(e.is_submitted ?? false)).length;
+      setOpenEvalCount(count);
+    } catch (err) {
+      console.warn('Failed to fetch open evaluations count', err);
+      setOpenEvalCount(0);
+    }
+  };
+
+  useEffect(() => {
+    fetchOpenEvaluations();
+
+    // Listen for evaluation submissions from other pages and refresh the count
+    const handler = () => fetchOpenEvaluations();
+    window.addEventListener('eval:updated', handler);
+    return () => window.removeEventListener('eval:updated', handler);
+  }, []);
 
   const links = sidebarLinks.map((item, index) => {
     if (item.type === 'divider') {
@@ -127,6 +153,12 @@ const StudentSidebarComponent = () => {
         component={Link}
         to={item.link || '/'}
         active={pathname === item.link}
+        rightSection={
+          // show small red dot for Evaluation when there are open items
+          item.label === 'Evaluation' && openEvalCount > 0 ? (
+            <span className="nav-badge-dot" aria-label={`${openEvalCount} open evaluations`} />
+          ) : null
+        }
       />
     );
   });

@@ -160,6 +160,12 @@ const EvaluationPage = () => {
         // mark subject as submitted in the subjects list so UI updates immediately and persist on refresh
         setSubjects(prev => prev.map(s => s.id === subjectId ? { ...s, is_submitted: true, is_available: false, submission_id: submissionId ?? s.submission_id, submitted_at: submissionId ? new Date().toISOString() : s.submitted_at } : s));
         // Do not automatically open the view modal after submission; user can click "View Evaluation" when ready.
+                // Notify sidebar (or other listeners) that evaluations updated so they can refresh counts/badges
+                try {
+                    window.dispatchEvent(new CustomEvent('eval:updated', { detail: { subjectId, submissionId } }));
+                } catch (e) {
+                    // ignore
+                }
     };
 
     // compute selected term open/closed once so badges follow the term selector status

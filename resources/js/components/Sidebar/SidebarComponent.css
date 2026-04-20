@@ -19,6 +19,16 @@
   border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
 }
 
+.nav-badge-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e53935; /* red */
+  display: inline-block;
+  margin-left: 8px;
+  box-shadow: 0 0 0 6px rgba(229,57,53,0.06);
+}
+
 .links {
   flex: 1;
   margin-left: calc(var(--mantine-spacing-md) * -1);
