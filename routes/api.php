@@ -20,6 +20,7 @@ use App\Http\Controllers\StudentScheduleController;
 use App\Http\Controllers\UserAccountController;
 use App\Http\Controllers\UserRoleController;
 use App\Http\Controllers\StudentEvaluationController;
+use App\Http\Controllers\StudentProgramController;
 
 // Public routes (no auth needed)
 Route::post('/', [AuthController::class, 'index']);
@@ -135,6 +136,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/delete-educ-background/{id}', [EducBackgroundController::class, 'deleteEducationalBackground'])->name('deleteEducationalBackground');
         Route::put('/update-fam-background/{id}', [FamBackgroundController::class, 'updateFamBackground'])->name('updateFamBackground');
         Route::delete('/delete-fam-background/{id}', [FamBackgroundController::class, 'deleteFamBackground'])->name('deleteFamBackground');
+        
+        // STUDENT PROGRAMS
+        Route::get('/fetch/student-programs/{student_id}', [StudentProgramController::class, 'index'])->name('fetchStudentPrograms');
+        Route::post('/student-programs', [StudentProgramController::class, 'store'])->name('createStudentProgram');
+        Route::get('/student-programs/{id}', [StudentProgramController::class, 'show'])->name('showStudentProgram');
+        Route::put('/student-programs/{id}', [StudentProgramController::class, 'update'])->name('updateStudentProgram');
+        Route::delete('/student-programs/{id}', [StudentProgramController::class, 'destroy'])->name('deleteStudentProgram');
+        
+        // Fetch courses for the student's chosen program/curriculum
+        Route::get('/fetch/student-program-courses/{student_id}', [StudentProgramController::class, 'courses'])->name('fetchStudentProgramCourses');
+        // Fetch courses for a specific student_program record
+        Route::get('/fetch/student-program-courses-by-id/{student_program_id}', [StudentProgramController::class, 'coursesByStudentProgram'])->name('fetchStudentProgramCoursesById');
+    // Fetch student programs and their curriculum courses grouped by year/semester
+    Route::get('/fetch/student-programs-with-courses/{student_id}', [StudentProgramController::class, 'programsWithCourses'])->name('fetchStudentProgramsWithCourses');
     });
 
     // PRE-ENROLLMENT ROUTES //

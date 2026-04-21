@@ -51,6 +51,8 @@ const sidebarLinks = [
       { label: 'Enrollment Schedule', link: '/pe/enrollment-schedule' },
     ],
   },
+  // New: My Programs page link
+  { label: 'My Programs', icon: IconSchool, link: '/mp/programs' },
   { label: 'Grades', icon: IconChalkboardTeacher, link: '/g/view' },
   { label: 'Evaluation', icon: IconChalkboardTeacher, link: '/eval/view' },
   { type: 'divider', label: 'Additional Settings' },

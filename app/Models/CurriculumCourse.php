@@ -20,11 +20,11 @@ class CurriculumCourse extends Model
 
     public function curriculum()
     {
-        return $this->hasMany(Curriculum::class);
+        return $this->belongsTo(Curriculum::class, 'curriculum_id');
     }
 
     public function course()
     {
-        return $this->hasMany(Course::class);
+        return $this->belongsTo(Course::class, 'course_id');
     }
 }

@@ -26,6 +26,11 @@ const AppLayout = () => {
         <AppShell
             px={20}
             header={{ height: 50 }}
+            styles={{
+                navbar: { zIndex: 300 },
+                main: { position: 'relative', zIndex: 0 },
+                header: { zIndex: 400 },
+            }}
             navbar={{
                 width: { sm: 250, lg: 300 },
                 breakpoint: 'lg',

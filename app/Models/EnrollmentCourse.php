@@ -20,6 +20,7 @@ class EnrollmentCourse extends Model
         'grade',
         'final_grade',
         'inc',
+    'status_course',
         'section_code',
         'id_no',
         'instructor',
