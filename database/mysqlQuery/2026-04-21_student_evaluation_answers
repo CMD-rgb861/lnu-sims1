@@ -1,0 +1,19 @@
+CREATE TABLE `student_evaluation_submission_answers` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `submission_id` BIGINT UNSIGNED NOT NULL,
+    `question_key` VARCHAR(255) NOT NULL,
+    `score` TINYINT UNSIGNED NOT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+
+    INDEX `idx_submission_id` (`submission_id`),
+    INDEX `idx_question_key` (`question_key`),
+
+    UNIQUE KEY `student_eval_answer_unique_submission_question`
+    (`submission_id`, `question_key`),
+
+    CONSTRAINT `fk_submission_answers_submission_id`
+        FOREIGN KEY (`submission_id`)
+        REFERENCES `student_evaluation_submissions`(`id`)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

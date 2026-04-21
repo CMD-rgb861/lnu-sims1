@@ -1,0 +1,24 @@
+CREATE TABLE `student_evaluation_submissions` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `student_id_number` VARCHAR(255) NOT NULL,
+    `subject_id` BIGINT UNSIGNED NOT NULL,
+    `instructor_id` BIGINT UNSIGNED NULL,
+    `term_id` INT UNSIGNED NOT NULL,
+    `total_score` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    `max_score` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    `rating_percentage` DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    `comment` TEXT NULL,
+    `submitted_at` TIMESTAMP NULL,
+    `status` VARCHAR(255) NOT NULL DEFAULT 'submitted',
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+
+    INDEX `idx_student_id_number` (`student_id_number`),
+    INDEX `idx_subject_id` (`subject_id`),
+    INDEX `idx_instructor_id` (`instructor_id`),
+    INDEX `idx_term_id` (`term_id`),
+    INDEX `idx_submitted_at` (`submitted_at`),
+
+    UNIQUE KEY `student_eval_unique_student_subject_term`
+    (`student_id_number`, `subject_id`, `term_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
