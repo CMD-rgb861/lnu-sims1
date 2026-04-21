@@ -17,8 +17,7 @@ import {
   ScrollArea,
   Paper,
   Skeleton,
-  Select,
-  TextInput,
+  // Select and TextInput filters removed
   Box,
   Stack,
   useMantineColorScheme,
@@ -34,16 +33,13 @@ const ProgramsPage = () => {
     <Text key="current">My Programs</Text>,
   ];
 
-  const [programs, setPrograms] = useState([]);
   const [courses, setCourses] = useState([]);
   const [groupedCoursesMap, setGroupedCoursesMap] = useState({});
   const [studentPrograms, setStudentPrograms] = useState([]);
   const [selectedStudentProgramId, setSelectedStudentProgramId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [colleges, setColleges] = useState([]);
-  const [selectedCollege, setSelectedCollege] = useState(null);
-  const [search, setSearch] = useState('');
+  // filter UI removed: colleges, selectedCollege and search states removed
 
   const { user } = useAuth();
   const { colorScheme } = useMantineColorScheme();
@@ -112,24 +108,8 @@ const ProgramsPage = () => {
     }
   }, [selectedStudentProgramId, groupedCoursesMap]);
 
-  // Keep legacy filters (not used for courses) but keep search for course title/code
-  const filtered = programs.filter((p) => {
-    if (selectedCollege && selectedCollege !== (p.college_name || (p.department && p.department.college && p.department.college.college_name))) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return (p.program_name || '').toLowerCase().includes(q) || (p.program_code || '').toLowerCase().includes(q);
-    }
-    return true;
-  });
-
-  const filteredCourses = courses.filter((cc) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    const courseObj = cc.course || {};
-    const name = (courseObj.course_name || cc.course_name || '').toLowerCase();
-    const code = (courseObj.course_code || cc.course_code || '').toLowerCase();
-    return name.includes(q) || code.includes(q);
-  });
+  // Filters removed — show all courses for the selected program
+  const filteredCourses = courses;
 
   // Group courses by year_level then semester
   const grouped = filteredCourses.reduce((acc, cur) => {
@@ -150,7 +130,7 @@ const ProgramsPage = () => {
         <Divider mb="lg" />
 
         <Title align="left" order={2} mb={4} fw={600} fz={20}>My Programs</Title>
-        <Text fz="sm" c="dimmed" mb="lg">Browse the programs associated with your account. Use filters to narrow the list.</Text>
+  <Text fz="sm" c="dimmed" mb="lg">Browse the programs associated with your account.</Text>
 
         {loading ? (
           <Paper withBorder radius="lg" p="xl" mb="lg">
@@ -172,24 +152,7 @@ const ProgramsPage = () => {
           <>
             {error && <Text c="red" fz="sm" mb="md">Error loading programs: {String(error?.message || error)}</Text>}
 
-            <Group mb="md" align="center">
-              <Select
-                placeholder="Select program"
-                data={studentPrograms.map(sp => ({ value: String(sp.id), label: (sp.program?.program_name || sp.program_name || 'Program') + (sp.curriculum ? ` — ${sp.curriculum.curriculum_name}` : '') }))}
-                value={selectedStudentProgramId ? String(selectedStudentProgramId) : null}
-                onChange={(v) => setSelectedStudentProgramId(v ? Number(v) : null)}
-                sx={{ minWidth: 360 }}
-                searchable
-                clearable
-              />
-
-              <TextInput
-                placeholder="Search by course name or code"
-                value={search}
-                onChange={(e) => setSearch(e.currentTarget.value)}
-                sx={{ flex: 1, minWidth: 240 }}
-              />
-            </Group>
+            {/* Program selector and search filters removed — showing curriculum for the currently selected program */}
 
             {(!filteredCourses || filteredCourses.length === 0) ? (
               <Paper withBorder radius="md" p="md" mb="md">
@@ -204,11 +167,40 @@ const ProgramsPage = () => {
                     {Object.keys(grouped[year]).sort((a,b)=>a-b).map((sem) => {
                       const rows = grouped[year][sem];
                     // compute sem GWA if final ratings are available
-                    const ratings = rows.map(r => {
-                      const v = r.final_rating ?? r.finalRating ?? r.grade ?? r.final;
-                      return typeof v === 'string' ? Number(v) : v;
-                    }).filter(n => n !== undefined && n !== null && !Number.isNaN(n));
-                    const semGwa = ratings.length ? (ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(2) : null;
+                    // compute sem GWA only when all subjects have numeric final grades and status is Passed
+                    const gradeValues = rows.map(r => {
+                      const v = r.final_grade ?? r.finalGrade ?? r.final_rating ?? r.finalRating ?? r.grade ?? r.final;
+                      return (typeof v === 'string' || typeof v === 'number') ? Number(v) : NaN;
+                    });
+                    const statusValues = rows.map(r => (r.status_course || r.statusCourse || '').toString().toLowerCase());
+
+                    const allHaveGrades = gradeValues.length > 0 && gradeValues.every(g => !Number.isNaN(g));
+                    const allPassed = statusValues.length > 0 && statusValues.every(s => s === 'passed');
+
+                    let semGwa = null;
+                    if (allHaveGrades && allPassed) {
+                      // weighted average by units when available
+                      let totalWeighted = 0;
+                      let totalUnits = 0;
+                      rows.forEach((r, idx) => {
+                        const courseObj = r.course || {};
+                        const unitsRaw = courseObj.units ?? r.units ?? r.course_units ?? r.course_units_raw;
+                        const units = Number(unitsRaw) || 0;
+                        const grade = gradeValues[idx];
+                        if (!Number.isNaN(grade) && units > 0) {
+                          totalWeighted += grade * units;
+                          totalUnits += units;
+                        } else if (!Number.isNaN(grade) && totalUnits === 0) {
+                          // if units are missing, fall back to simple average
+                          totalWeighted += grade;
+                          totalUnits += 1;
+                        }
+                      });
+
+                      if (totalUnits > 0) {
+                        semGwa = (totalWeighted / totalUnits).toFixed(2);
+                      }
+                    }
                     const semName = (sem === 2) ? 'Second Semester' : (sem === 1) ? 'First Semester' : `Semester ${sem}`;
                     // try to get school year
                     const sy = (selectedStudentProgram && (selectedStudentProgram.school_year || (selectedStudentProgram.curriculum && selectedStudentProgram.curriculum.school_year))) || rows[0]?.school_year || '';
